@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：验证最小规则组件的基础正确性，包括 glob 匹配、YAML 解析和 patch 文件抽取。
+/// 联动文件：主要覆盖 `src/infra/path_utils.mbt`、`src/infra/flat_yaml.mbt` 和 `src/checkers/gate.mbt` 中的底层逻辑。
+
+///|
+
+///|
 /// 验证最小 glob 实现能够匹配计划书里的典型目录模式。
 test "glob matches nested paths with doublestar" {
   assert_true(

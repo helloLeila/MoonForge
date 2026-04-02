@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：提供本项目使用的最小 YAML 解析能力，专门解析模板、仓库规则和当前任务文件。
+/// 联动文件：主要被 `src/services/commands.mbt` 调用，用于读取 `.moonforge` 目录下的规则与任务配置。
+
+///|
+
+///|
 /// 最小 YAML 结果对象，只支持标量和一级字符串列表。
 pub struct FlatYaml {
   scalars : Map[String, String]

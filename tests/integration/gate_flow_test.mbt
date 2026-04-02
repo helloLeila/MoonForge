@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：验证门禁主流程的集成行为，覆盖通过、拒绝、补齐后重试和人工审批四类场景。
+/// 联动文件：直接调用 `src/services/commands.mbt` 的命令编排逻辑，并依赖 `src/checkers/gate.mbt` 对应的判定结果。
+
+///|
+
+///|
 /// 为每条集成测试生成互不干扰的临时仓库目录。
 fn unique_repo_root(label : String) -> String {
   @infra.join_path("tmp", "moonforge-\{label}-\{@uv.hrtime()}")

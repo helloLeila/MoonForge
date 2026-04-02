@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：提供路径标准化、目录拼接、后缀判断和最小 glob 匹配能力，是门禁范围判定的基础组件。
+/// 联动文件：被 `src/checkers/gate.mbt` 用于路径命中判断，也被 `src/services/commands.mbt` 和测试代码复用。
+
+///|
+
+///|
 /// 统一路径分隔符和尾部斜杠，保证后续匹配行为稳定。
 pub fn normalize_path(path : String) -> String {
   let replaced = path.replace(old="\\", new="/").trim().to_string()

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# 文件说明：回放完整 Demo 链路，依次执行 init、task、check、report，快速展示四类门禁结论。
+# 联动文件：调用 cmd/main/main.mbt 编译出的 CLI，并使用 examples/demo-repo-skeleton 与 examples/runs/* 作为输入夹具。
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"

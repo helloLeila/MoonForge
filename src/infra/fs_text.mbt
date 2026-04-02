@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：封装基于 libuv 的同步文件系统读写能力，为配置读取、结果落盘和测试夹具写入提供统一入口。
+/// 联动文件：被 `src/services/commands.mbt`、`tests/integration/gate_flow_test.mbt` 和 `src/infra/flat_yaml.mbt` 直接依赖。
+
+///|
+
+///|
 using @uv {type Errno}
 
 ///|

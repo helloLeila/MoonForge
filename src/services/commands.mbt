@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：编排 `init`、`task`、`check`、`report` 四个核心命令，负责规则装配、检查执行和结果写出。
+/// 联动文件：向下调用 `src/infra/*`、`src/adapters/mode_paths.mbt` 和 `src/checkers/gate.mbt`，向上被 `cmd/main/main.mbt` 调用。
+
+///|
+
+///|
 /// 读取必填标量字段，缺失时立即终止初始化或检查流程。
 fn scalar_required(yaml : @infra.FlatYaml, key : String) -> String raise {
   guard yaml.get_scalar(key) is Some(value) else {

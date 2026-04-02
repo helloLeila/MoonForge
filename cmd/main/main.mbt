@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：定义 MoonForge Gate 的 CLI 入口，负责解析命令行参数并把请求分发到服务层。
+/// 联动文件：直接调用 `src/services/commands.mbt` 中的命令编排逻辑，并依赖 `src/domain/types.mbt` 中的结果对象完成终端输出。
+
+///|
+
+///|
 /// 从 argparse 结果中提取某个单值参数，并在缺失时给出明确错误。
 fn option_value(matches : @argparse.Matches, key : String) -> String raise {
   guard matches.values.get(key) is Some(values) else {

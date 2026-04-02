@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：实现门禁核心判定逻辑，负责把补丁文件、任务约束和材料输入转成最终决策。
+/// 联动文件：读取 `src/domain/types.mbt` 中的规则与结果对象，并被 `src/services/commands.mbt` 作为检查主引擎调用。
+
+///|
+
+///|
 /// 统一构造违规项，减少重复字段拼装代码。
 fn push_violation(
   violations : Array[@domain.Violation],

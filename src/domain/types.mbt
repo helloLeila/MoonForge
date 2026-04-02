@@ -1,4 +1,10 @@
 ///|
+/// 文件说明：定义门禁系统的核心领域对象，包括任务模板、仓库规则、违规项和最终检查结果。
+/// 联动文件：被 `src/checkers/gate.mbt` 用于构建判定结果，也被 `src/services/commands.mbt` 用于序列化输出和报告生成。
+
+///|
+
+///|
 /// 门禁最终决策类型，对应计划书里的四种正式结论。
 pub(all) enum Decision {
   Accept
