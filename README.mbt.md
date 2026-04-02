@@ -164,8 +164,6 @@ moon test
 MoonForge Gate 适合被理解为：
 
 - AI 原生软件工程中的代码变更治理组件
-- 面向共享仓库的准入与风控内核
-- 基于 MoonBit 的工程化系统型项目 Demo
 
 ## License
 
