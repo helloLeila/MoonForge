@@ -1,0 +1,7 @@
+diff --git a/frontend/src/pages/UserList/index.tsx b/frontend/src/pages/UserList/index.tsx
+index 1111111..2222222 100644
+--- a/frontend/src/pages/UserList/index.tsx
++++ b/frontend/src/pages/UserList/index.tsx
+@@ -1,1 +1,2 @@
+export const userListPage = true
++export const departmentFilterEnabled = true

@@ -1,0 +1,7 @@
+diff --git a/backend/src/main/java/com/acme/user/service/high-risk/UserAuditService.java b/backend/src/main/java/com/acme/user/service/high-risk/UserAuditService.java
+index 5555555..6666666 100644
+--- a/backend/src/main/java/com/acme/user/service/high-risk/UserAuditService.java
++++ b/backend/src/main/java/com/acme/user/service/high-risk/UserAuditService.java
+@@ -1,1 +1,2 @@
+public final class UserAuditService {}
++public final class UserAuditService { private boolean requiresHumanApproval = true; }

@@ -1,0 +1,52 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "leila/moonforge_gate/src/infra"
+
+// Values
+pub fn basename(String) -> String
+
+pub fn dirname(String) -> String
+
+pub fn ensure_dir(String) -> Unit raise
+
+pub fn extension_of(String) -> String
+
+pub fn has_allowed_extension(String, Array[String]) -> Bool
+
+pub fn join_path(String, String) -> String
+
+pub fn match_glob(String, String) -> Bool
+
+pub fn matches_any(String, Array[String]) -> Bool
+
+pub fn normalize_path(String) -> String
+
+pub fn parse_flat_yaml(String) -> FlatYaml raise
+
+pub fn path_exists(String) -> Bool raise
+
+pub fn read_flat_yaml(String) -> FlatYaml raise
+
+pub fn read_text(String) -> String raise
+
+pub fn read_text_if_exists(String) -> String? raise
+
+pub fn split_path(String) -> Array[String]
+
+pub fn unique_strings(Array[String]) -> Array[String]
+
+pub fn write_text(String, String) -> Unit raise
+
+// Errors
+
+// Types and methods
+pub struct FlatYaml {
+  scalars : Map[String, String]
+  lists : Map[String, Array[String]]
+} derive(Show)
+pub fn FlatYaml::get_list(Self, String) -> Array[String]
+pub fn FlatYaml::get_scalar(Self, String) -> String?
+
+// Type aliases
+
+// Traits
+

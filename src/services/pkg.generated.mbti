@@ -1,0 +1,26 @@
+// Generated using `moon info`, DON'T EDIT IT
+package "leila/moonforge_gate/src/services"
+
+import {
+  "leila/moonforge_gate/src/domain",
+}
+
+// Values
+pub fn create_task(String, String, String, String) -> @domain.CurrentTask raise
+
+pub fn init_repo(String) -> String raise
+
+pub fn report_latest(String, mode? : String) -> String raise
+
+pub fn run_check(String, String, mode? : String) -> @domain.CheckResult raise
+
+pub fn summarize_result(@domain.CheckResult) -> String
+
+// Errors
+
+// Types and methods
+
+// Type aliases
+
+// Traits
+

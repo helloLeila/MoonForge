@@ -1,0 +1,15 @@
+diff --git a/frontend/src/pages/UserList/index.tsx b/frontend/src/pages/UserList/index.tsx
+index 1111111..2222222 100644
+--- a/frontend/src/pages/UserList/index.tsx
++++ b/frontend/src/pages/UserList/index.tsx
+@@ -1,1 +1,2 @@
+export const userListPage = true
++export const departmentFilterEnabled = true
+
+diff --git a/frontend/src/components/DepartmentFilter.tsx b/frontend/src/components/DepartmentFilter.tsx
+index 3333333..4444444 100644
+--- a/frontend/src/components/DepartmentFilter.tsx
++++ b/frontend/src/components/DepartmentFilter.tsx
+@@ -1,1 +1,2 @@
+export const departmentFilter = true
++export const renderDepartmentFilter = () => "ok"
