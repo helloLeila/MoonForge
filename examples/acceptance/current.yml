@@ -1,0 +1,59 @@
+fixture_root: "examples/acceptance/react-homepage-fixture"
+task_type: "homepage-links"
+title: "Update homepage work links"
+
+fixture_files:
+  - "src/components/WorkLinks.jsx"
+  - "src/data/siteContent.js"
+  - "src/core/request.js"
+
+target_paths:
+  - "src/components/WorkLinks.jsx"
+  - "src/data/siteContent.js"
+
+protected_paths:
+  - "src/core/**"
+
+approval_required_paths:
+
+blocked_extensions:
+  - ".map"
+  - ".snap"
+
+generated_artifact_paths:
+  - "dist/**"
+  - "build/**"
+  - "coverage/**"
+  - ".next/**"
+  - ".cache/**"
+
+blocked_file_names:
+  - ".DS_Store"
+
+blocked_file_patterns:
+
+content_blocklist_patterns:
+  - "console.log"
+  - "debugger"
+  - "printf"
+  - "println"
+  - "TODO"
+  - "FIXME"
+
+allowed_paths:
+  - "src/components/WorkLinks.jsx"
+  - "src/data/siteContent.js"
+
+forbidden_paths:
+
+allowed_extensions:
+  - ".js"
+  - ".jsx"
+
+required_artifacts:
+  - "preview-report.json"
+
+required_commands:
+  - "test -f src/components/WorkLinks.jsx"
+
+max_changed_files: 2
