@@ -1,0 +1,9 @@
+diff --git a/src/components/WorkLinks.jsx b/src/components/WorkLinks.jsx
+index 1111111..2222222 100644
+--- a/src/components/WorkLinks.jsx
++++ b/src/components/WorkLinks.jsx
+@@ -1,3 +1,4 @@
+ export function WorkLinks() {
++  console.log("debug links")
+   return "links"
+ }
