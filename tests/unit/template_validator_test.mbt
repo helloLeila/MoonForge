@@ -12,6 +12,7 @@ test "template validator rejects file name mismatch" {
     forbidden_paths: [],
     allowed_extensions: [".mbt"],
     required_artifacts: ["test-report.json"],
+    required_commands: [],
     max_changed_files: 8,
     manual_approval_paths: [],
   }
@@ -30,6 +31,7 @@ test "template validator rejects nonpositive max changed files" {
     forbidden_paths: [],
     allowed_extensions: [".mbt"],
     required_artifacts: ["test-report.json"],
+    required_commands: [],
     max_changed_files: 0,
     manual_approval_paths: [],
   }
@@ -48,6 +50,7 @@ test "template validator rejects overlapping allowed and forbidden paths" {
     forbidden_paths: ["infra/**"],
     allowed_extensions: [".mbt"],
     required_artifacts: ["test-report.json"],
+    required_commands: [],
     max_changed_files: 8,
     manual_approval_paths: [],
   }
@@ -66,6 +69,7 @@ test "template validator accepts valid template" {
     forbidden_paths: [],
     allowed_extensions: [".mbt"],
     required_artifacts: ["test-report.json"],
+    required_commands: [],
     max_changed_files: 8,
     manual_approval_paths: [],
   }
@@ -73,4 +77,23 @@ test "template validator accepts valid template" {
     "feature-change.yml", template,
   )
   assert_eq(result, Ok(()))
+}
+
+///|
+/// 模板校验器应拒绝空白的必需命令定义，避免 task template 注入无效命令。
+test "template validator rejects blank required commands" {
+  let template = @domain.TaskTemplate::{
+    task_type: "feature-change",
+    allowed_paths: ["src/**"],
+    forbidden_paths: [],
+    allowed_extensions: [".mbt"],
+    required_artifacts: ["test-report.json"],
+    required_commands: ["  "],
+    max_changed_files: 8,
+    manual_approval_paths: [],
+  }
+  let result = @checkers.validate_template_semantics(
+    "feature-change.yml", template,
+  )
+  assert_eq(result, Err("RULE_SEMANTIC_INVALID"))
 }
