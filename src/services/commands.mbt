@@ -320,6 +320,18 @@ fn[T : ToJson] write_json_file(path : String, value : T) -> Unit raise {
 }
 
 ///|
+/// 在源文件存在时把文本内容复制到目标文件，供导出最小验收包复用。
+fn copy_text_file_if_exists(source : String, target : String) -> Bool raise {
+  match @infra.read_text_if_exists(source) {
+    Some(content) => {
+      @infra.write_text(target, content)
+      true
+    }
+    None => false
+  }
+}
+
+///|
 /// 生成给开发者阅读的 Markdown 门禁报告。
 fn render_report_markdown(result : @domain.CheckResult) -> String {
   let lines : Array[String] = [
@@ -657,6 +669,56 @@ pub fn doctor_repo(repo_root : String) -> String raise {
   }
 
   render_doctor_report(issues)
+}
+
+///|
+/// 导出最近一次检查的最小验收包，复制固定输入与固定输出文件到标准目录。
+pub fn pack_latest(
+  repo_root : String,
+  mode? : String = "local",
+) -> String raise {
+  let actual_mode = @adapters.normalize_mode(mode)
+  let latest_dir = @adapters.latest_output_dir(repo_root, actual_mode)
+  if !@infra.path_exists(latest_dir) {
+    return render_pack_failure("未找到最近一次检查结果")
+  }
+
+  let pack_dir = @infra.join_path(repo_root, ".moonforge/out/\{actual_mode}/packs/latest")
+  let copied_files : Array[String] = []
+
+  let fixed_inputs = [
+    (repo_rules_path(repo_root), @infra.join_path(pack_dir, "repo-rules.yml")),
+    (current_task_path(repo_root), @infra.join_path(pack_dir, "current-task.yml")),
+  ]
+  for item in fixed_inputs {
+    let (source, target) = item
+    if copy_text_file_if_exists(source, target) {
+      copied_files.push(@infra.basename(target))
+    }
+  }
+
+  let fixed_outputs = collect_pack_files([
+    "gate-result.json",
+    "gate-report.md",
+    "scope-result.json",
+    "artifact-result.json",
+    "checked-files.txt",
+    "events.jsonl",
+  ])
+  for name in fixed_outputs {
+    if copy_text_file_if_exists(
+        @infra.join_path(latest_dir, name),
+        @infra.join_path(pack_dir, name),
+      ) {
+      copied_files.push(name)
+    }
+  }
+
+  if copied_files.is_empty() {
+    render_pack_failure("未找到可导出的结果文件")
+  } else {
+    render_pack_success(pack_dir, copied_files.length())
+  }
 }
 
 ///|
