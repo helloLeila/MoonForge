@@ -73,12 +73,49 @@ fn template_path(repo_root : String, task_type : String) -> String {
 }
 
 ///|
+/// 返回材料 schema 目录的标准路径。
+fn artifact_schemas_dir(repo_root : String) -> String {
+  @infra.join_path(repo_root, ".moonforge/artifact-schemas")
+}
+
+///|
+/// 将材料文件名映射成 schema 文件名，例如 `preview-report.json -> preview-report.yml`。
+fn artifact_schema_file_name(artifact_name : String) -> String {
+  let name = @infra.basename(artifact_name)
+  let parts = name.split(".").map(segment => segment.to_string()).collect()
+  if parts.length() <= 1 {
+    "\{name}.yml"
+  } else {
+    let stem_parts : Array[String] = []
+    for i in 0..<(parts.length() - 1) {
+      stem_parts.push(parts[i])
+    }
+    let stem = stem_parts.join(".")
+    "\{stem}.yml"
+  }
+}
+
+///|
+/// 返回单个材料 schema 文件的完整路径。
+fn artifact_schema_path(repo_root : String, artifact_name : String) -> String {
+  @infra.join_path(
+    artifact_schemas_dir(repo_root),
+    artifact_schema_file_name(artifact_name),
+  )
+}
+
+///|
 /// 加载仓库级长期规则。
 fn load_repo_rules(repo_root : String) -> @domain.RepoRules raise {
   let yaml = @infra.read_flat_yaml(repo_rules_path(repo_root))
   @domain.RepoRules::{
     protected_paths: yaml.get_list("protected_paths"),
     approval_required_paths: yaml.get_list("approval_required_paths"),
+    blocked_extensions: yaml.get_list("blocked_extensions"),
+    generated_artifact_paths: yaml.get_list("generated_artifact_paths"),
+    blocked_file_names: yaml.get_list("blocked_file_names"),
+    blocked_file_patterns: yaml.get_list("blocked_file_patterns"),
+    content_blocklist_patterns: yaml.get_list("content_blocklist_patterns"),
     default_allowed_extensions: yaml.get_list("default_allowed_extensions"),
     path_groups: yaml.get_lists_with_prefix("path_groups."),
     max_changed_files: int_optional(yaml, "max_changed_files"),
@@ -98,6 +135,7 @@ fn load_template(
     forbidden_paths: yaml.get_list("forbidden_paths"),
     allowed_extensions: yaml.get_list("allowed_extensions"),
     required_artifacts: yaml.get_list("required_artifacts"),
+    required_commands: yaml.get_list("required_commands"),
     max_changed_files: int_required(yaml, "max_changed_files"),
     manual_approval_paths: yaml.get_list("manual_approval_paths"),
   }
@@ -136,10 +174,7 @@ fn validate_task_type_in_repo(
 
 ///|
 /// 校验仓库中的任务模板是否都满足基础语义与可解析性。
-fn validate_all_templates(
-  repo_root : String,
-  errors : Array[String],
-) -> Unit {
+fn validate_all_templates(repo_root : String, errors : Array[String]) -> Unit {
   let template_names : Array[String] = []
   try {
     for template_name in collect_repo_template_names(repo_root) {
@@ -158,10 +193,14 @@ fn validate_all_templates(
           template,
         ) {
         Ok(_) => ()
-        Err(code) => errors.push("任务模板文件非法：\{template_name}: \{code}")
+        Err(code) =>
+          errors.push("任务模板文件非法：\{template_name}: \{code}")
       }
     } catch {
-      err => errors.push("任务模板文件非法：\{template_name}: \{err.to_string()}")
+      err =>
+        errors.push(
+          "任务模板文件非法：\{template_name}: \{err.to_string()}",
+        )
     }
   }
 }
@@ -176,6 +215,31 @@ fn load_current_task(repo_root : String) -> @domain.CurrentTask raise {
     target_groups: yaml.get_list("target_groups"),
     target_paths: yaml.get_list("target_paths"),
   }
+}
+
+///|
+/// 加载材料 schema 中的必填字段定义；未提供 schema 时使用空规则。
+fn load_artifact_required_fields(
+  repo_root : String,
+  artifact_names : Array[String],
+) -> Map[String, Array[String]] raise {
+  let field_map : Map[String, Array[String]] = {}
+  for artifact_name in @infra.unique_strings(artifact_names) {
+    let schema_path = artifact_schema_path(repo_root, artifact_name)
+    if !@infra.path_exists(schema_path) {
+      continue
+    }
+    let yaml = @infra.read_flat_yaml(schema_path)
+    let required_fields : Array[String] = []
+    for field in yaml.get_list("required_fields") {
+      let trimmed = field.trim().to_string()
+      if trimmed != "" {
+        required_fields.push(trimmed)
+      }
+    }
+    field_map[artifact_name] = required_fields
+  }
+  field_map
 }
 
 ///|
@@ -210,6 +274,7 @@ fn render_task_template(template : @domain.TaskTemplate) -> String {
     render_list_block("forbidden_paths", template.forbidden_paths),
     render_list_block("allowed_extensions", template.allowed_extensions),
     render_list_block("required_artifacts", template.required_artifacts),
+    render_list_block("required_commands", template.required_commands),
     "max_changed_files: \{template.max_changed_files}",
     render_list_block("manual_approval_paths", template.manual_approval_paths),
   ].join("\n\n") +
@@ -224,6 +289,17 @@ fn render_repo_rules(repo_rules : @domain.RepoRules) -> String {
     render_list_block(
       "approval_required_paths",
       repo_rules.approval_required_paths,
+    ),
+    render_list_block("blocked_extensions", repo_rules.blocked_extensions),
+    render_list_block(
+      "generated_artifact_paths",
+      repo_rules.generated_artifact_paths,
+    ),
+    render_list_block("blocked_file_names", repo_rules.blocked_file_names),
+    render_list_block("blocked_file_patterns", repo_rules.blocked_file_patterns),
+    render_list_block(
+      "content_blocklist_patterns",
+      repo_rules.content_blocklist_patterns,
     ),
     render_list_block(
       "default_allowed_extensions",
@@ -259,6 +335,15 @@ fn default_repo_rules() -> @domain.RepoRules {
   @domain.RepoRules::{
     protected_paths: ["backend/src/main/java/**/security/**", "infra/**"],
     approval_required_paths: ["backend/src/main/java/**/service/high-risk/**"],
+    blocked_extensions: [".map", ".snap", ".lock"],
+    generated_artifact_paths: [
+      "dist/**", "build/**", "coverage/**", ".next/**", ".cache/**",
+    ],
+    blocked_file_names: [".env", ".DS_Store"],
+    blocked_file_patterns: [],
+    content_blocklist_patterns: [
+      "console.log", "debugger", "printf", "println", "TODO", "FIXME",
+    ],
     default_allowed_extensions: [
       ".java", ".ts", ".tsx", ".md", ".json", ".yml", ".yaml",
     ],
@@ -287,6 +372,7 @@ fn default_templates() -> Array[TemplateSeed] {
         forbidden_paths: ["backend/src/main/java/**/security/**", "infra/**"],
         allowed_extensions: [".java", ".ts", ".tsx", ".md", ".json"],
         required_artifacts: ["test-report.json", "review-report.json"],
+        required_commands: [],
         max_changed_files: 8,
         manual_approval_paths: ["backend/src/main/java/**/service/high-risk/**"],
       },
@@ -299,6 +385,7 @@ fn default_templates() -> Array[TemplateSeed] {
         forbidden_paths: ["backend/src/main/java/**/payment/**"],
         allowed_extensions: [".java", ".ts", ".tsx", ".md", ".json"],
         required_artifacts: ["bug-context.md", "test-report.json"],
+        required_commands: [],
         max_changed_files: 10,
         manual_approval_paths: ["backend/src/main/java/**/service/high-risk/**"],
       },
@@ -313,6 +400,7 @@ fn default_templates() -> Array[TemplateSeed] {
         forbidden_paths: ["backend/src/main/java/**/security/**"],
         allowed_extensions: [".java", ".ts", ".tsx", ".md", ".json"],
         required_artifacts: ["api-spec.md", "test-report.json"],
+        required_commands: [],
         max_changed_files: 6,
         manual_approval_paths: ["backend/src/main/java/**/service/high-risk/**"],
       },
@@ -327,6 +415,7 @@ fn default_templates() -> Array[TemplateSeed] {
           ".json", ".yml", ".yaml", ".md", ".properties", ".env.example",
         ],
         required_artifacts: ["config-impact.md"],
+        required_commands: [],
         max_changed_files: 3,
         manual_approval_paths: [],
       },
@@ -343,6 +432,7 @@ fn default_templates() -> Array[TemplateSeed] {
         ],
         allowed_extensions: [".java", ".ts", ".tsx", ".json", ".md"],
         required_artifacts: ["test-report.json", "coverage-report.json"],
+        required_commands: [],
         max_changed_files: 10,
         manual_approval_paths: [],
       },
@@ -382,16 +472,12 @@ fn split_task_targets(paths_csv : String) -> (Array[String], Array[String]) {
 /// 扫描一次运行目录中已经存在的材料文件。
 fn collect_present_artifacts(
   run_dir : String,
-  effective_task : @domain.EffectiveTask,
-) -> Array[String] raise {
-  let candidates = @infra.unique_strings(effective_task.required_artifacts)
-  let present : Array[String] = []
-  for candidate in candidates {
-    if @infra.path_exists(@infra.join_path(run_dir, candidate)) {
-      present.push(candidate)
-    }
-  }
-  present
+  required_artifacts : Array[String],
+) -> Map[String, String] raise {
+  @checkers.collect_artifacts(
+    run_dir,
+    @infra.unique_strings(required_artifacts),
+  )
 }
 
 ///|
@@ -493,6 +579,9 @@ fn write_outputs(
     protected_files: result.protected_files,
     approval_required_files: result.approval_required_files,
     forbidden_extension_files: result.forbidden_extension_files,
+    blocked_file_name_files: result.blocked_file_name_files,
+    blocked_file_pattern_files: result.blocked_file_pattern_files,
+    generated_artifact_files: result.generated_artifact_files,
     changed_file_count: result.changed_file_count,
     max_changed_files: result.effective_task.max_changed_files,
   }
@@ -500,6 +589,8 @@ fn write_outputs(
     required_artifacts: result.effective_task.required_artifacts,
     provided_artifacts: result.provided_artifacts,
     missing_artifacts: result.missing_artifacts,
+    invalid_artifacts: result.invalid_artifacts,
+    command_failures: result.command_failures,
   }
   let gate = @domain.GateResultFile::{
     run_id: result.run_id,
@@ -540,7 +631,42 @@ fn write_outputs(
 /// 初始化仓库内的 `.moonforge` 配置目录和默认模板。
 pub fn init_repo(repo_root : String) -> String raise {
   let moonforge_dir = @infra.join_path(repo_root, ".moonforge")
+  let review_schema =
+    #|artifact_name: review-report.json
+    #|
+    #|required_fields:
+    #|  - "reviewer"
+    #|  - "status"
+    #|
+    #|optional_fields:
+    #|
+    #|allowed_values:
+    #|
+  let test_schema =
+    #|artifact_name: test-report.json
+    #|
+    #|required_fields:
+    #|  - "passed"
+    #|  - "suite"
+    #|
+    #|optional_fields:
+    #|
+    #|allowed_values:
+    #|
+  let preview_schema =
+    #|artifact_name: preview-report.json
+    #|
+    #|required_fields:
+    #|  - "section"
+    #|  - "status"
+    #|  - "summary"
+    #|
+    #|optional_fields:
+    #|
+    #|allowed_values:
+    #|
   @infra.ensure_dir(task_types_dir(repo_root))
+  @infra.ensure_dir(artifact_schemas_dir(repo_root))
   @infra.write_text(
     repo_rules_path(repo_root),
     render_repo_rules(default_repo_rules()),
@@ -551,6 +677,18 @@ pub fn init_repo(repo_root : String) -> String raise {
       render_task_template(seed.template),
     )
   }
+  @infra.write_text(
+    artifact_schema_path(repo_root, "review-report.json"),
+    review_schema,
+  )
+  @infra.write_text(
+    artifact_schema_path(repo_root, "test-report.json"),
+    test_schema,
+  )
+  @infra.write_text(
+    artifact_schema_path(repo_root, "preview-report.json"),
+    preview_schema,
+  )
   @infra.write_text(current_task_path(repo_root), blank_current_task_template())
   "Initialized MoonForge Gate config in \{moonforge_dir}"
 }
@@ -627,24 +765,20 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
     match validate_repo_rules_text(repo_rules_text) {
       Err(code) => errors.push("仓库规则文件非法：\{code}")
       Ok(_) =>
-        match validate_required_fields(
-          repo_rules_text,
-          [
-            "protected_paths",
-            "approval_required_paths",
-            "default_allowed_extensions",
+        match
+          validate_required_fields(repo_rules_text, [
+            "protected_paths", "approval_required_paths", "default_allowed_extensions",
             "path_groups",
-          ],
-        ) {
+          ]) {
           Err(field) => errors.push("仓库规则文件缺少字段：\{field}")
-          Ok(_) => {
+          Ok(_) =>
             try {
               ignore(load_repo_rules(repo_root))
               validate_all_templates(repo_root, errors)
             } catch {
-              err => errors.push("仓库规则文件非法：\{err.to_string()}")
+              err =>
+                errors.push("仓库规则文件非法：\{err.to_string()}")
             }
-          }
         }
     }
   }
@@ -655,7 +789,7 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
     let task_text = @infra.read_text(current_task_file)
     match validate_current_task_text(task_text) {
       Err(code) => errors.push("当前任务文件非法：\{code}")
-      Ok(_) => {
+      Ok(_) =>
         try {
           let current_task = load_current_task(repo_root)
           match @checkers.validate_current_task(current_task) {
@@ -663,7 +797,8 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
             Err(code) => errors.push("当前任务文件非法：\{code}")
           }
           if errors.is_empty() {
-            match validate_task_type_in_repo(repo_root, current_task.task_type) {
+            match
+              validate_task_type_in_repo(repo_root, current_task.task_type) {
               Ok(_) => ()
               Err(code) => errors.push("当前任务文件非法：\{code}")
             }
@@ -673,26 +808,23 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
               let repo_rules = load_repo_rules(repo_root)
               let template = load_template(repo_root, current_task.task_type)
               if errors.is_empty() {
-                try {
-                  ignore(
-                    @checkers.build_effective_task(
-                      repo_rules,
-                      template,
-                      current_task,
-                    ),
-                  )
-                } catch {
-                  err => errors.push("当前任务文件非法：\{err.to_string()}")
+                ignore(
+                  @checkers.build_effective_task(
+                    repo_rules, template, current_task,
+                  ),
+                ) catch {
+                  err =>
+                    errors.push("当前任务文件非法：\{err.to_string()}")
                 }
               }
             } catch {
-              err => errors.push("任务模板文件非法：\{err.to_string()}")
+              err =>
+                errors.push("任务模板文件非法：\{err.to_string()}")
             }
           }
         } catch {
           err => errors.push("当前任务文件非法：\{err.to_string()}")
         }
-      }
     }
   }
   if errors.is_empty() {
@@ -724,10 +856,18 @@ pub fn run_check(
   } else {
     @adapters.read_local_diff(run_dir)
   }
-  let provided_artifacts = collect_present_artifacts(run_dir, effective_task)
+  let provided_artifacts = collect_present_artifacts(
+    run_dir,
+    effective_task.required_artifacts,
+  )
+  let artifact_required_fields = load_artifact_required_fields(
+    repo_root,
+    effective_task.required_artifacts,
+  )
   let run_id = @adapters.run_id_from_run_dir(run_dir)
   let result = @checkers.evaluate_gate(
-    effective_task, diff_text, provided_artifacts, run_id,
+    effective_task, diff_text, provided_artifacts, artifact_required_fields, repo_root,
+    run_id,
   )
   write_outputs(repo_root, actual_mode, result)
   result
@@ -909,6 +1049,7 @@ pub fn dispatch_cli_command(
   run? : String = "",
   run_id? : String = "",
   mode? : String = "local",
+  acceptance_case? : String = "",
 ) -> String raise {
   match command_name {
     "init" => init_repo(repo_root)
@@ -929,6 +1070,7 @@ pub fn dispatch_cli_command(
     "replay" => replay_check(repo_root, run_id)
     "doctor" => doctor_repo(repo_root)
     "pack" => pack_latest(repo_root, mode~)
+    "acc" => run_acceptance_case(acceptance_case)
     _ => raise Failure::Failure("Unsupported subcommand: \{command_name}")
   }
 }
