@@ -10,8 +10,13 @@ pub fn validate_template_semantics(
   file_name : String,
   template : @domain.TaskTemplate,
 ) -> Result[Unit, String] {
+  let overlapping_paths = template.allowed_paths.filter(path => {
+    template.forbidden_paths.contains(path)
+  })
   if file_name != @infra.template_yaml_file_name(template.task_type) {
     Err("CONFIG_SCHEMA_INVALID")
+  } else if !overlapping_paths.is_empty() {
+    Err("RULE_SEMANTIC_INVALID")
   } else if template.max_changed_files <= 0 {
     Err("RULE_SEMANTIC_INVALID")
   } else {

@@ -40,6 +40,24 @@ test "template validator rejects nonpositive max changed files" {
 }
 
 ///|
+/// 模板校验器应拒绝允许路径与禁止路径完全重叠的模板。
+test "template validator rejects overlapping allowed and forbidden paths" {
+  let template = @domain.TaskTemplate::{
+    task_type: "feature-change",
+    allowed_paths: ["infra/**", "src/**"],
+    forbidden_paths: ["infra/**"],
+    allowed_extensions: [".mbt"],
+    required_artifacts: ["test-report.json"],
+    max_changed_files: 8,
+    manual_approval_paths: [],
+  }
+  let result = @checkers.validate_template_semantics(
+    "feature-change.yml", template,
+  )
+  assert_eq(result, Err("RULE_SEMANTIC_INVALID"))
+}
+
+///|
 /// 模板校验器应接受文件名匹配且规则值有效的模板。
 test "template validator accepts valid template" {
   let template = @domain.TaskTemplate::{
