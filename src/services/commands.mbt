@@ -611,6 +611,12 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
             Err(code) => errors.push("当前任务文件非法：\{code}")
           }
           if errors.is_empty() {
+            match validate_task_type(current_task.task_type) {
+              Ok(_) => ()
+              Err(code) => errors.push("当前任务文件非法：\{code}")
+            }
+          }
+          if errors.is_empty() {
             try {
               let repo_rules = load_repo_rules(repo_root)
               let template = load_template(repo_root, current_task.task_type)

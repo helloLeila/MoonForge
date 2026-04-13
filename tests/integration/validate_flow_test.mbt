@@ -135,6 +135,32 @@ test "validate fails when current task title missing" {
 }
 
 ///|
+/// validate_repo 应在当前任务使用未知 task_type 时返回错误。
+test "validate fails when current task type unknown" {
+  let repo = unique_validate_dir("unknown-task-type")
+  let invalid_task =
+    #|task_type: "unknown-type"
+    #|title: "Add filter"
+    #|
+    #|target_groups:
+    #|  - "frontend_pages"
+    #|
+    #|target_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+  ignore(@services.init_repo(repo))
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+    invalid_task,
+  )
+  let result = @services.validate_repo(repo)
+  match result {
+    Err(message) => assert_true(message.contains("TASK_TYPE_UNKNOWN"))
+    Ok(_) => panic()
+  }
+}
+
+///|
 /// validate_repo 应在当前任务 YAML 语法非法时返回错误，而不是抛出异常。
 test "validate fails when current task yaml invalid" {
   let repo = unique_validate_dir("invalid-task-yaml")
