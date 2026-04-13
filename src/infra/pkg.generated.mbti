@@ -38,15 +38,33 @@ pub fn parse_flat_yaml(String) -> FlatYaml raise
 
 pub fn path_exists(String) -> Bool raise
 
+pub fn pre_commit_hook_required_markers() -> Array[String]
+
 pub fn read_flat_yaml(String) -> FlatYaml raise
 
+pub fn read_latest_artifact_result(String, String) -> String? raise
+
 pub fn read_latest_gate_result(String, String) -> String? raise
+
+pub fn read_latest_run_context(String, String) -> String? raise
+
+pub fn read_latest_scope_result(String, String) -> String? raise
+
+pub fn read_snapshot_artifact_result(String, String) -> String? raise
+
+pub fn read_snapshot_gate_result(String, String) -> String? raise
+
+pub fn read_snapshot_run_context(String, String) -> String? raise
+
+pub fn read_snapshot_scope_result(String, String) -> String? raise
 
 pub fn read_text(String) -> String raise
 
 pub fn read_text_if_exists(String) -> String? raise
 
 pub fn render_gate_report(String, String, String, String, String, Int, Array[String]) -> String
+
+pub fn render_pre_commit_hook() -> String
 
 pub fn render_terminal_summary(String, String, Int) -> String
 

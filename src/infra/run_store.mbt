@@ -1,6 +1,5 @@
 ///|
 /// 文件说明：提供门禁运行结果的磁盘持久化能力，负责写出所有结构化结果物到标准目录。
-/// 联动文件：被 `src/services/commands.mbt` 在 write_outputs 流程中调用，依赖 `src/infra/fs_text.mbt` 提供基础 IO 能力。
 
 ///|
 /// 将检查结果的覆盖文件列表写成纯文本，每行一个文件路径。
@@ -29,19 +28,19 @@ pub fn[T : ToJson] write_json_artifact(path : String, value : T) -> Unit raise {
 ///|
 /// 返回当前运行的输出目录路径，格式为 `.moonforge/out/{mode}/latest`。
 /// 入参：`repo_root`，仓库根目录路径。
-/// 入参：`mode`，运行模式，可为 `"local"` 或 `"ci"`。
+/// 入参：`mode`，运行模式，可为 `"local"`、`"ci"` 或 `"pr"`。
 /// 出参：最新运行结果目录路径。
 pub fn latest_run_dir(repo_root : String, mode : String) -> String {
   join_path(repo_root, ".moonforge/out/\{mode}/latest")
 }
 
 ///|
-/// 返回指定运行快照的目录路径，格式为 `.moonforge/out/snapshots/{run_id}`。
+/// 返回指定运行快照的目录路径，格式为 `.moonforge/runs/{run_id}`。
 /// 入参：`repo_root`，仓库根目录路径。
 /// 入参：`run_id`，本次运行的唯一标识符。
 /// 出参：快照目录路径。
 pub fn snapshot_run_dir(repo_root : String, run_id : String) -> String {
-  join_path(repo_root, ".moonforge/out/snapshots/\{run_id}")
+  join_path(repo_root, ".moonforge/runs/\{run_id}")
 }
 
 ///|
@@ -65,5 +64,78 @@ pub fn read_latest_gate_result(
   mode : String,
 ) -> String? raise {
   let path = join_path(latest_run_dir(repo_root, mode), "gate-result.json")
+  read_text_if_exists(path)
+}
+
+///|
+/// 读取最近一次运行的 `scope-result.json` 文件内容。
+pub fn read_latest_scope_result(
+  repo_root : String,
+  mode : String,
+) -> String? raise {
+  let path = join_path(latest_run_dir(repo_root, mode), "scope-result.json")
+  read_text_if_exists(path)
+}
+
+///|
+/// 读取最近一次运行的 `artifact-result.json` 文件内容。
+pub fn read_latest_artifact_result(
+  repo_root : String,
+  mode : String,
+) -> String? raise {
+  let path = join_path(latest_run_dir(repo_root, mode), "artifact-result.json")
+  read_text_if_exists(path)
+}
+
+///|
+/// 读取最近一次运行的 `run-context.json` 文件内容。
+pub fn read_latest_run_context(
+  repo_root : String,
+  mode : String,
+) -> String? raise {
+  let path = join_path(latest_run_dir(repo_root, mode), "run-context.json")
+  read_text_if_exists(path)
+}
+
+///|
+/// 读取指定运行快照中的 `gate.snapshot.json`。
+pub fn read_snapshot_gate_result(
+  repo_root : String,
+  run_id : String,
+) -> String? raise {
+  let path = join_path(snapshot_run_dir(repo_root, run_id), "gate.snapshot.json")
+  read_text_if_exists(path)
+}
+
+///|
+/// 读取指定运行快照中的 `scope.snapshot.json`。
+pub fn read_snapshot_scope_result(
+  repo_root : String,
+  run_id : String,
+) -> String? raise {
+  let path = join_path(snapshot_run_dir(repo_root, run_id), "scope.snapshot.json")
+  read_text_if_exists(path)
+}
+
+///|
+/// 读取指定运行快照中的 `artifact.snapshot.json`。
+pub fn read_snapshot_artifact_result(
+  repo_root : String,
+  run_id : String,
+) -> String? raise {
+  let path = join_path(
+    snapshot_run_dir(repo_root, run_id),
+    "artifact.snapshot.json",
+  )
+  read_text_if_exists(path)
+}
+
+///|
+/// 读取指定运行快照中的 `run-context.snapshot.json`。
+pub fn read_snapshot_run_context(
+  repo_root : String,
+  run_id : String,
+) -> String? raise {
+  let path = join_path(snapshot_run_dir(repo_root, run_id), "run-context.snapshot.json")
   read_text_if_exists(path)
 }
