@@ -117,7 +117,10 @@ pub fn list_dir(path : String) -> Array[String] raise {
     let scandir = uv.fs_scandir_sync(@utf8.encode(target), 0)
     let entries : Array[String] = []
 
-    fn read_entries(scandir : @uv.Scandir, entries : Array[String]) -> Unit raise {
+    fn read_entries(
+      scandir : @uv.Scandir,
+      entries : Array[String],
+    ) -> Unit raise {
       try {
         let entry = scandir.next()
         let name = @utf8.decode_lossy(entry.name())
