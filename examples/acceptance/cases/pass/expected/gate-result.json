@@ -1,0 +1,7 @@
+{
+  "run_id": "run-pass",
+  "decision": "Accept",
+  "decision_summary": "允许放行",
+  "violations": [],
+  "next_action": "可进入下一阶段"
+}
