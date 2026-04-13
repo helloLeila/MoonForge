@@ -588,6 +588,7 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
           }
           if errors.is_empty() {
             try {
+              let repo_rules = load_repo_rules(repo_root)
               let template = load_template(repo_root, current_task.task_type)
               match
                 @checkers.validate_template_semantics(
@@ -596,6 +597,19 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
                 ) {
                 Ok(_) => ()
                 Err(code) => errors.push("任务模板文件非法：\{code}")
+              }
+              if errors.is_empty() {
+                try {
+                  ignore(
+                    @checkers.build_effective_task(
+                      repo_rules,
+                      template,
+                      current_task,
+                    ),
+                  )
+                } catch {
+                  err => errors.push("当前任务文件非法：\{err.to_string()}")
+                }
               }
             } catch {
               err => errors.push("任务模板文件非法：\{err.to_string()}")

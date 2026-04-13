@@ -155,6 +155,28 @@ test "validate fails when current task yaml invalid" {
 }
 
 ///|
+/// validate_repo 应拦截手工写入的越界目标路径。
+test "validate fails when current task target path is outside template scope" {
+  let repo = unique_validate_dir("target-outside-scope")
+  let invalid_task =
+    #|task_type: "feature-change"
+    #|title: "Add filter"
+    #|target_groups:
+    #|  - "frontend_pages"
+    #|
+    #|target_paths:
+    #|  - "backend/src/main/java/**/security/**"
+    #|
+  ignore(@services.init_repo(repo))
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+    invalid_task,
+  )
+  let result = @services.validate_repo(repo)
+  assert_true(result is Err(_))
+}
+
+///|
 /// validate_repo 应在当前任务引用的模板语义非法时返回错误。
 test "validate fails when active template semantics invalid" {
   let repo = unique_validate_dir("template")
