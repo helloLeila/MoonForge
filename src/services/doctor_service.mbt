@@ -55,6 +55,24 @@ pub fn diagnose_required_fields(
 }
 
 ///|
+/// 检测配置文件中的无效 YAML 语法。
+/// 入参：`content`，配置文件的文本内容。
+/// 出参：语法问题的描述数组。
+pub fn diagnose_yaml_syntax(content : String) -> Array[String] {
+  let issues : Array[String] = []
+  let lines = content.split("\n")
+  let mut line_num = 0
+  for line in lines {
+    line_num = line_num + 1
+    let trimmed = line.trim()
+    if trimmed.has_prefix("-") && !trimmed.has_prefix("- ") && trimmed.length() > 1 {
+      issues.push("第 \{line_num} 行：列表项缺少空格")
+    }
+  }
+  issues
+}
+
+///|
 /// 渲染完整的诊断报告，包含所有问题项。
 /// 入参：`issues`，问题描述数组。
 /// 出参：终端可打印的诊断报告文本。
