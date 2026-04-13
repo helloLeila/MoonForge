@@ -74,7 +74,19 @@ pub fn build_effective_task(
     } else {
       template.allowed_extensions
     },
+    blocked_extensions: @infra.unique_strings(repo_rules.blocked_extensions),
+    generated_artifact_paths: @infra.unique_strings(
+      repo_rules.generated_artifact_paths,
+    ),
+    blocked_file_names: @infra.unique_strings(repo_rules.blocked_file_names),
+    blocked_file_patterns: @infra.unique_strings(
+      repo_rules.blocked_file_patterns,
+    ),
+    content_blocklist_patterns: @infra.unique_strings(
+      repo_rules.content_blocklist_patterns,
+    ),
     required_artifacts: @infra.unique_strings(template.required_artifacts),
+    required_commands: @infra.unique_strings(template.required_commands),
     max_changed_files,
   }
 }
@@ -94,17 +106,51 @@ pub fn pick_stricter_limit(left : Int, right : Int) -> Int {
 pub fn evaluate_gate(
   effective_task : @domain.EffectiveTask,
   diff_text : String,
-  provided_artifacts : Array[String],
+  provided_artifacts : Map[String, String],
+  artifact_required_fields : Map[String, Array[String]],
+  repo_root : String,
   run_id : String,
-) -> @domain.CheckResult {
+) -> @domain.CheckResult raise {
   let checked_files = extract_touched_files(diff_text)
   let scope_result = check_scope(effective_task, checked_files)
   let out_of_scope_files = scope_result.out_of_scope_files
   let protected_files : Array[String] = []
   let approval_required_files : Array[String] = []
-  let forbidden_extension_files : Array[String] = []
+  let file_type_result = check_file_types(
+    effective_task.allowed_extensions,
+    effective_task.blocked_extensions,
+    effective_task.blocked_file_names,
+    effective_task.blocked_file_patterns,
+    effective_task.generated_artifact_paths,
+    checked_files,
+  )
+  let forbidden_extension_files = file_type_result.forbidden_extension_files
+  let blocked_file_name_files = file_type_result.blocked_file_name_files
+  let blocked_file_pattern_files = file_type_result.blocked_file_pattern_files
+  let generated_artifact_files = file_type_result.generated_artifact_files
   let violations : Array[@domain.Violation] = []
-  let missing_artifacts : Array[String] = []
+  let artifact_result = check_artifacts(
+    effective_task.required_artifacts,
+    provided_artifacts,
+    artifact_required_fields,
+  )
+  let missing_artifacts = artifact_result.missing_artifacts
+  let invalid_artifacts = artifact_result.invalid_artifacts
+  let content_blocklist_hits = find_blocklisted_files(
+    diff_text,
+    effective_task.content_blocklist_patterns,
+  )
+  let command_result = check_required_commands(
+    effective_task.required_commands,
+    repo_root,
+  )
+  let command_failures = command_result.failed_commands
+  let provided_artifact_names : Array[String] = []
+  for artifact in effective_task.required_artifacts {
+    if provided_artifacts.contains(artifact) {
+      provided_artifact_names.push(artifact)
+    }
+  }
 
   let mut hard_failure = false
   let mut needs_human = false
@@ -137,18 +183,50 @@ pub fn evaluate_gate(
       approval_required_files.push(file)
       needs_human = true
     }
+  }
 
-    if !@infra.has_allowed_extension(file, effective_task.allowed_extensions) {
-      forbidden_extension_files.push(file)
-      push_violation(
-        violations,
-        "FORBIDDEN_EXTENSION",
-        Some(file),
-        "生成了当前模板不允许的文件类型",
-        "移除该文件，或调整模板允许后缀后重新执行",
-      )
-      hard_failure = true
-    }
+  for file in forbidden_extension_files {
+    push_violation(
+      violations,
+      "FORBIDDEN_EXTENSION",
+      Some(file),
+      "生成了当前模板不允许的文件类型",
+      "移除该文件，或调整模板允许后缀后重新执行",
+    )
+    hard_failure = true
+  }
+
+  for file in blocked_file_name_files {
+    push_violation(
+      violations,
+      "BLOCKED_FILE_NAME",
+      Some(file),
+      "命中了仓库级禁止提交的文件名",
+      "撤回该文件，或调整仓库规则后重新执行检查",
+    )
+    hard_failure = true
+  }
+
+  for file in blocked_file_pattern_files {
+    push_violation(
+      violations,
+      "BLOCKED_FILE_PATTERN",
+      Some(file),
+      "命中了仓库级禁止提交的文件路径模式",
+      "撤回该文件，或调整仓库规则后重新执行检查",
+    )
+    hard_failure = true
+  }
+
+  for file in generated_artifact_files {
+    push_violation(
+      violations,
+      "GENERATED_ARTIFACT_TOUCHED",
+      Some(file),
+      "误提交了生成产物、缓存或覆盖率结果",
+      "从暂存区移除该文件后重新执行检查",
+    )
+    hard_failure = true
   }
 
   if scope_result.file_count_exceeded {
@@ -162,17 +240,45 @@ pub fn evaluate_gate(
     hard_failure = true
   }
 
-  for artifact in effective_task.required_artifacts {
-    if !provided_artifacts.contains(artifact) {
-      missing_artifacts.push(artifact)
-      push_violation(
-        violations,
-        "MISSING_ARTIFACT",
-        Some(artifact),
-        "缺少模板要求的材料文件",
-        "补齐 \{artifact} 后重新执行检查",
-      )
-    }
+  for artifact in missing_artifacts {
+    push_violation(
+      violations,
+      "MISSING_ARTIFACT",
+      Some(artifact),
+      "缺少模板要求的材料文件",
+      "补齐 \{artifact} 后重新执行检查",
+    )
+  }
+
+  for artifact in invalid_artifacts {
+    push_violation(
+      violations,
+      "ARTIFACT_INVALID",
+      Some(artifact),
+      "材料文件存在，但格式或字段不满足要求",
+      "修复 \{artifact} 的结构后重新执行检查",
+    )
+  }
+
+  for command in command_failures {
+    push_violation(
+      violations,
+      "REQUIRED_COMMAND_FAILED",
+      None,
+      "必需校验命令执行失败：\{command}",
+      "修复命令失败原因后重新执行检查",
+    )
+  }
+
+  for file in content_blocklist_hits {
+    push_violation(
+      violations,
+      "CONTENT_PATTERN_BLOCKED",
+      Some(file),
+      "命中了调试残留或临时标记黑名单",
+      "移除调试输出或临时标记后重新执行检查",
+    )
+    hard_failure = true
   }
 
   if needs_human {
@@ -189,7 +295,9 @@ pub fn evaluate_gate(
     @domain.Reject
   } else if needs_human {
     @domain.NeedHumanApproval
-  } else if !missing_artifacts.is_empty() {
+  } else if !missing_artifacts.is_empty() ||
+    !invalid_artifacts.is_empty() ||
+    !command_failures.is_empty() {
     @domain.Retryable
   } else {
     @domain.Accept
@@ -204,8 +312,14 @@ pub fn evaluate_gate(
     protected_files,
     approval_required_files,
     forbidden_extension_files,
+    blocked_file_name_files,
+    blocked_file_pattern_files,
+    generated_artifact_files,
     missing_artifacts,
-    provided_artifacts,
+    invalid_artifacts,
+    provided_artifacts: provided_artifact_names,
+    command_failures,
+    content_blocklist_hits,
     effective_task,
     changed_file_count: checked_files.length(),
     changed_file_count_exceeded: scope_result.file_count_exceeded,
