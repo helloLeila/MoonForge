@@ -3,10 +3,13 @@ package "leila/moonforge_gate/src/checkers"
 
 import {
   "leila/moonforge_gate/src/domain",
+  "moonbitlang/core/debug",
 }
 
 // Values
 pub fn build_effective_task(@domain.RepoRules, @domain.TaskTemplate, @domain.CurrentTask) -> @domain.EffectiveTask raise
+
+pub fn check_scope(@domain.EffectiveTask, Array[String]) -> ScopeCheckResult
 
 pub fn evaluate_gate(@domain.EffectiveTask, String, Array[String], String) -> @domain.CheckResult
 
@@ -21,6 +24,11 @@ pub fn validate_template_semantics(String, @domain.TaskTemplate) -> Result[Unit,
 // Errors
 
 // Types and methods
+pub(all) struct ScopeCheckResult {
+  out_of_scope_files : Array[String]
+  target_paths_hit : Array[String]
+  file_count_exceeded : Bool
+} derive(@debug.Debug)
 
 // Type aliases
 

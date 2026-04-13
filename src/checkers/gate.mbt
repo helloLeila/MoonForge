@@ -98,7 +98,8 @@ pub fn evaluate_gate(
   run_id : String,
 ) -> @domain.CheckResult {
   let checked_files = extract_touched_files(diff_text)
-  let out_of_scope_files : Array[String] = []
+  let scope_result = check_scope(effective_task, checked_files)
+  let out_of_scope_files = scope_result.out_of_scope_files
   let protected_files : Array[String] = []
   let approval_required_files : Array[String] = []
   let forbidden_extension_files : Array[String] = []
@@ -109,8 +110,7 @@ pub fn evaluate_gate(
   let mut needs_human = false
 
   for file in checked_files {
-    if !@infra.matches_any(file, effective_task.allowed_paths) {
-      out_of_scope_files.push(file)
+    if out_of_scope_files.contains(file) {
       push_violation(
         violations,
         "PATH_OUT_OF_SCOPE",
@@ -151,7 +151,7 @@ pub fn evaluate_gate(
     }
   }
 
-  if checked_files.length() > effective_task.max_changed_files {
+  if scope_result.file_count_exceeded {
     push_violation(
       violations,
       "CHANGED_FILE_COUNT_EXCEEDED",
@@ -208,7 +208,6 @@ pub fn evaluate_gate(
     provided_artifacts,
     effective_task,
     changed_file_count: checked_files.length(),
-    changed_file_count_exceeded: checked_files.length() >
-    effective_task.max_changed_files,
+    changed_file_count_exceeded: scope_result.file_count_exceeded,
   }
 }
