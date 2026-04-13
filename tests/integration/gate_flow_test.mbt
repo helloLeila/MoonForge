@@ -611,6 +611,78 @@ test "ci mode reads diff through ci adapter" {
 }
 
 ///|
+/// 验证 PR 复检模式会记录 base/head 信息，并把上下文写入独立输出目录。
+test "pr mode writes run context and report summary" {
+  let repo_root = unique_repo_root("pr")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/pr")
+  try {
+    seed_repo(repo_root)
+    feature_task(repo_root, "frontend/src/pages/**,frontend/src/components/**")
+    seed_run(run_dir, pass_diff())
+
+    @env.set_env_var("GITHUB_ACTIONS", "true")
+    @env.set_env_var("GITHUB_EVENT_NAME", "pull_request")
+    @env.set_env_var("GITHUB_BASE_REF", "main")
+    @env.set_env_var("GITHUB_HEAD_REF", "feature/search")
+
+    let result = @services.run_check(repo_root, run_dir, mode="pr")
+    let context_text = @infra.read_text(
+      @infra.join_path(
+        repo_root,
+        ".moonforge/out/pr/latest/run-context.json",
+      ),
+    )
+    let summary = @services.report_summary(repo_root, mode="pr")
+
+    @env.unset_env_var("GITHUB_ACTIONS")
+    @env.unset_env_var("GITHUB_EVENT_NAME")
+    @env.unset_env_var("GITHUB_BASE_REF")
+    @env.unset_env_var("GITHUB_HEAD_REF")
+
+    assert_true(result.decision == @domain.Accept)
+    assert_true(context_text.contains("\"mode\": \"pr\""))
+    assert_true(context_text.contains("\"base_ref\": \"main\""))
+    assert_true(context_text.contains("\"head_ref\": \"feature/search\""))
+    assert_true(summary.contains("main"))
+    assert_true(summary.contains("feature/search"))
+    assert_true(summary.contains("变更文件：2"))
+  } catch {
+    err => {
+      @env.unset_env_var("GITHUB_ACTIONS")
+      @env.unset_env_var("GITHUB_EVENT_NAME")
+      @env.unset_env_var("GITHUB_BASE_REF")
+      @env.unset_env_var("GITHUB_HEAD_REF")
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
+/// 验证缺少材料的重试结果会在 report 摘要里展示缺失数量。
+test "retry summary shows missing artifact count" {
+  let repo_root = unique_repo_root("retry-summary")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/retry-summary")
+  try {
+    seed_repo(repo_root)
+    feature_task(repo_root, "frontend/src/pages/**,frontend/src/components/**")
+    seed_run(run_dir, pass_diff(), include_review_report=false)
+
+    let result = @services.run_check(repo_root, run_dir)
+    let summary = @services.report_summary(repo_root)
+
+    assert_true(result.decision == @domain.Retryable)
+    assert_true(summary.contains("Retryable"))
+    assert_true(summary.contains("缺失材料：1"))
+  } catch {
+    err => {
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
 /// 验证触碰安全目录时，会命中受保护路径拒绝规则。
 test "touching protected path becomes reject" {
   let repo_root = unique_repo_root("reject")
