@@ -7,6 +7,8 @@ import {
 }
 
 // Values
+pub fn build_decision(has_scope_reject~ : Bool, has_protected_path~ : Bool, has_approval~ : Bool, has_missing_artifacts~ : Bool) -> @domain.DecisionView
+
 pub fn build_effective_task(@domain.RepoRules, @domain.TaskTemplate, @domain.CurrentTask) -> @domain.EffectiveTask raise
 
 pub fn check_artifacts(Array[String], Map[String, String]) -> ArtifactCheckResult

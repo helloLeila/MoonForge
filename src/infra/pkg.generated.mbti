@@ -12,6 +12,8 @@ pub fn dirname(String) -> String
 
 pub fn ensure_dir(String) -> Unit raise
 
+pub fn ensure_latest_dir(String, String) -> String raise
+
 pub fn expand_target_groups(Map[String, Array[String]], Array[String]) -> Array[String] raise
 
 pub fn extension_of(String) -> String
@@ -19,6 +21,8 @@ pub fn extension_of(String) -> String
 pub fn has_allowed_extension(String, Array[String]) -> Bool
 
 pub fn join_path(String, String) -> String
+
+pub fn latest_run_dir(String, String) -> String
 
 pub fn match_glob(String, String) -> Bool
 
@@ -34,15 +38,29 @@ pub fn path_exists(String) -> Bool raise
 
 pub fn read_flat_yaml(String) -> FlatYaml raise
 
+pub fn read_latest_gate_result(String, String) -> String? raise
+
 pub fn read_text(String) -> String raise
 
 pub fn read_text_if_exists(String) -> String? raise
+
+pub fn render_gate_report(String, String, String, String, String, Int, Array[String]) -> String
+
+pub fn render_terminal_summary(String, String, Int) -> String
+
+pub fn snapshot_run_dir(String, String) -> String
 
 pub fn split_path(String) -> Array[String]
 
 pub fn template_yaml_file_name(String) -> String
 
 pub fn unique_strings(Array[String]) -> Array[String]
+
+pub fn write_checked_files(String, Array[String]) -> Unit raise
+
+pub fn[T : ToJson] write_json_artifact(String, T) -> Unit raise
+
+pub fn write_jsonl(String, Array[String]) -> Unit raise
 
 pub fn write_text(String, String) -> Unit raise
 
