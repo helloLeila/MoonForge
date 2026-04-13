@@ -22,6 +22,12 @@ pub(all) struct EffectiveTask {
   forbidden_paths : Array[String]
   approval_required_paths : Array[String]
   allowed_extensions : Array[String]
+  blocked_extensions : Array[String]
+  generated_artifact_paths : Array[String]
+  blocked_file_names : Array[String]
+  blocked_file_patterns : Array[String]
+  content_blocklist_patterns : Array[String]
   required_artifacts : Array[String]
+  required_commands : Array[String]
   max_changed_files : Int
 } derive(Debug, ToJson)
