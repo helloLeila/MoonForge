@@ -14,17 +14,23 @@ pub fn blank_current_task_template() -> String
 
 pub fn bug_fix_template_header() -> String
 
+pub fn build_pack_manifest(String, String, String, String, Array[String]) -> @domain.PackManifestFile
+
 pub fn calculate_total_size(Array[Int]) -> Int
 
 pub fn collect_pack_files(Array[String]) -> Array[String]
 
 pub fn config_change_template_header() -> String
 
+pub fn count_files_with_prefix(Array[String], String) -> Int
+
 pub fn create_task(String, String, String, String) -> @domain.CurrentTask raise
 
 pub fn diagnose_empty_files(Array[(String, String)]) -> Array[String]
 
 pub fn diagnose_missing_files(Array[(String, Bool)]) -> Array[String]
+
+pub fn diagnose_pre_commit_hook(String, Bool, content? : String) -> Array[String]
 
 pub fn diagnose_required_fields(String, Array[String]) -> Array[String]
 
@@ -35,6 +41,12 @@ pub fn dispatch_cli_command(String, String, task_type? : String, title? : String
 pub fn doctor_repo(String) -> String raise
 
 pub fn extract_decision_label(String) -> String
+
+pub fn extract_json_array_length(String, String) -> Int
+
+pub fn extract_json_int_field(String, String) -> Int?
+
+pub fn extract_json_string_field(String, String) -> String?
 
 pub fn extract_task_type(String) -> String
 
@@ -62,15 +74,25 @@ pub fn render_current_task_yaml(String, String, Array[String]) -> String
 
 pub fn render_doctor_report(Array[String]) -> String
 
+pub fn render_mode_label(String) -> String
+
 pub fn render_no_result_message(String) -> String
 
 pub fn render_pack_failure(String) -> String
 
 pub fn render_pack_success(String, Int) -> String
 
-pub fn render_replay_summary(String, String) -> String
+pub fn render_pack_summary(@domain.PackManifestFile) -> String
 
-pub fn render_report_summary(String, String) -> String
+pub fn render_replay_summary(String, String, String, String, String) -> String
+
+pub fn render_report_summary(String, String, String, String) -> String
+
+pub fn render_result_metrics_summary(String?, String?) -> String
+
+pub fn render_route_summary(String?, String?, String?) -> String
+
+pub fn render_run_context_summary(String) -> String
 
 pub fn render_snapshot_not_found(String) -> String
 

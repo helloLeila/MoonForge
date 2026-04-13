@@ -1,6 +1,5 @@
 ///|
 /// 文件说明：实现 replay 命令的独立服务层，负责从快照目录重放历史检查结果。
-/// 联动文件：由 `src/services/commands.mbt` 的 `replay_check` 函数调用，依赖 `src/infra/run_store.mbt` 读取快照文件。
 
 ///|
 /// 检查指定运行 ID 的快照目录是否存在。
@@ -55,9 +54,24 @@ pub fn extract_task_type(snapshot_text : String) -> String {
 /// 生成 replay 命令的终端输出摘要文本。
 /// 入参：`run_id`，重放的运行标识符。
 /// 入参：`task_type`，快照中记录的任务类型。
+/// 入参：`context_summary`，运行来源摘要，可能为空。
 /// 出参：终端可打印的重放摘要文本。
-pub fn render_replay_summary(run_id : String, task_type : String) -> String {
-  "🔁 重放历史检查：\{run_id}（任务类型：\{task_type}）"
+pub fn render_replay_summary(
+  run_id : String,
+  task_type : String,
+  decision_label : String,
+  context_summary : String,
+  metrics_summary : String,
+) -> String {
+  let details : Array[String] = ["任务类型：\{task_type}", "结论：\{decision_label}"]
+  if context_summary.trim() != "" {
+    details.push("来源：\{context_summary}")
+  }
+  if metrics_summary.trim() != "" {
+    details.push("统计：\{metrics_summary}")
+  }
+  let detail_text = details.join("，")
+  "🔁 重放历史检查：\{run_id}（\{detail_text}）"
 }
 
 ///|
@@ -73,9 +87,9 @@ pub fn render_snapshot_not_found(run_id : String) -> String {
 /// 入参：`repo_root`，仓库根目录路径。
 /// 出参：快照目录下所有子目录名称的数组，每个名称对应一个运行 ID。
 pub fn list_available_snapshots(repo_root : String) -> Array[String] raise {
-  let snapshots_dir = @infra.join_path(repo_root, ".moonforge/out/snapshots")
+  let snapshots_dir = @infra.join_path(repo_root, ".moonforge/runs")
   if !@infra.path_exists(snapshots_dir) {
     return []
   }
-  []
+  @infra.list_dir(snapshots_dir)
 }

@@ -1,6 +1,5 @@
 ///|
 /// 文件说明：实现 report 命令的独立服务层，负责读取最近一次检查结果并生成可读报告。
-/// 联动文件：由 `src/services/commands.mbt` 的 `report_latest` 函数调用，依赖 `src/infra/run_store.mbt` 读取结果文件。
 
 ///|
 /// 从 gate-result.json 文件中提取结论标签字段。
@@ -29,9 +28,25 @@ pub fn extract_decision_label(json_text : String) -> String {
 /// 生成 report 命令的终端输出摘要文本。
 /// 入参：`decision_label`，检查结论的中文标签。
 /// 入参：`mode`，运行模式，`"local"` 或 `"ci"`。
+/// 入参：`context_summary`，来源上下文摘要，可能为空。
+/// 入参：`metrics_summary`，变更文件数与材料状态的统计摘要，可能为空。
 /// 出参：终端可打印的报告摘要文本。
-pub fn render_report_summary(decision_label : String, mode : String) -> String {
-  "📋 最近一次检查结论（\{mode} 模式）：\{decision_label}"
+pub fn render_report_summary(
+  decision_label : String,
+  mode : String,
+  context_summary : String,
+  metrics_summary : String,
+) -> String {
+  let lines : Array[String] = [
+    "📋 最近一次检查结论（\{mode} 模式）：\{decision_label}",
+  ]
+  if context_summary.trim() != "" {
+    lines.push("来源：\{context_summary}")
+  }
+  if metrics_summary.trim() != "" {
+    lines.push("统计：\{metrics_summary}")
+  }
+  lines.join("\n")
 }
 
 ///|

@@ -609,6 +609,36 @@ fn export_built_in_acceptance_configs(pack_dir : String) -> Array[String] raise 
 }
 
 ///|
+/// 根据执行模式和环境变量构建一次运行的上下文描述。
+fn build_run_context(
+  mode : String,
+  run_dir : String,
+  env : Map[String, String],
+) -> @domain.RunContextFile {
+  let actual_mode = @adapters.normalize_mode(mode)
+  let source_kind = match actual_mode {
+    "pr" => "pr_recheck"
+    "ci" => "ci_recheck"
+    _ => "local_staged"
+  }
+  let environment = if actual_mode == "local" {
+    "local_shell"
+  } else {
+    "github_actions"
+  }
+  @domain.RunContextFile::{
+    mode: actual_mode,
+    source_kind,
+    environment,
+    event_name: @adapters.github_event_name(env),
+    base_ref: @adapters.github_base_ref(env),
+    head_ref: @adapters.github_head_ref(env),
+    pr_number: @adapters.github_pr_number(env),
+    diff_path: @infra.join_path(run_dir, "patch.diff"),
+  }
+}
+
+///|
 /// 生成给开发者阅读的 Markdown 门禁报告。
 fn render_report_markdown(result : @domain.CheckResult) -> String {
   let lines : Array[String] = [
@@ -679,6 +709,7 @@ fn write_outputs(
   repo_root : String,
   mode : String,
   result : @domain.CheckResult,
+  run_context : @domain.RunContextFile,
 ) -> Unit raise {
   let latest_dir = @adapters.latest_output_dir(repo_root, mode)
   @infra.ensure_dir(latest_dir)
@@ -716,6 +747,10 @@ fn write_outputs(
     artifacts,
   )
   write_json_file(@infra.join_path(latest_dir, "gate-result.json"), gate)
+  write_json_file(
+    @infra.join_path(latest_dir, "run-context.json"),
+    run_context,
+  )
   @infra.write_text(
     @infra.join_path(latest_dir, "gate-report.md"),
     render_report_markdown(result),
@@ -735,6 +770,16 @@ fn write_outputs(
     @infra.join_path(snapshot_dir, "task.snapshot.json"),
     result.effective_task,
   )
+  write_json_file(
+    @infra.join_path(snapshot_dir, "run-context.snapshot.json"),
+    run_context,
+  )
+  write_json_file(@infra.join_path(snapshot_dir, "scope.snapshot.json"), scope)
+  write_json_file(
+    @infra.join_path(snapshot_dir, "artifact.snapshot.json"),
+    artifacts,
+  )
+  write_json_file(@infra.join_path(snapshot_dir, "gate.snapshot.json"), gate)
 }
 
 ///|
@@ -800,6 +845,10 @@ pub fn init_repo(repo_root : String) -> String raise {
     preview_schema,
   )
   @infra.write_text(current_task_path(repo_root), blank_current_task_template())
+  @infra.write_text(
+    @infra.join_path(repo_root, ".git/hooks/pre-commit"),
+    @infra.render_pre_commit_hook(),
+  )
   "Initialized MoonForge Gate config in \{moonforge_dir}"
 }
 
@@ -952,17 +1001,18 @@ pub fn run_check(
   mode? : String = "local",
 ) -> @domain.CheckResult raise {
   let actual_mode = @adapters.normalize_mode(mode)
+  let env = @adapters.current_env()
   let repo_rules = load_repo_rules(repo_root)
   let current_task = load_current_task(repo_root)
   let template = load_template(repo_root, current_task.task_type)
   let effective_task = @checkers.build_effective_task(
     repo_rules, template, current_task,
   )
-  let diff_text = if actual_mode == "ci" {
-    @adapters.read_ci_diff(
-      @adapters.current_env(),
-      @infra.join_path(run_dir, "patch.diff"),
-    )
+  let diff_path = @infra.join_path(run_dir, "patch.diff")
+  let diff_text = if actual_mode == "pr" {
+    @adapters.read_pr_diff(env, diff_path)
+  } else if actual_mode == "ci" {
+    @adapters.read_ci_diff(env, diff_path)
   } else {
     @adapters.read_local_diff(run_dir)
   }
@@ -979,7 +1029,8 @@ pub fn run_check(
     effective_task, diff_text, provided_artifacts, artifact_required_fields, repo_root,
     run_id,
   )
-  write_outputs(repo_root, actual_mode, result)
+  let run_context = build_run_context(actual_mode, run_dir, env)
+  write_outputs(repo_root, actual_mode, result, run_context)
   result
 }
 
@@ -1006,8 +1057,22 @@ pub fn report_summary(
 ) -> String raise {
   let actual_mode = @adapters.normalize_mode(mode)
   match @infra.read_latest_gate_result(repo_root, actual_mode) {
-    Some(json_text) =>
-      render_report_summary(extract_decision_label(json_text), actual_mode)
+    Some(json_text) => {
+      let context_summary = match @infra.read_latest_run_context(repo_root, actual_mode) {
+        Some(context_text) => render_run_context_summary(context_text)
+        None => ""
+      }
+      let metrics_summary = render_result_metrics_summary(
+        @infra.read_latest_scope_result(repo_root, actual_mode),
+        @infra.read_latest_artifact_result(repo_root, actual_mode),
+      )
+      render_report_summary(
+        extract_decision_label(json_text),
+        actual_mode,
+        context_summary,
+        metrics_summary,
+      )
+    }
     None => render_no_result_message(actual_mode)
   }
 }
@@ -1019,8 +1084,27 @@ pub fn replay_check(repo_root : String, run_id : String) -> String raise {
     return render_snapshot_not_found(run_id)
   }
   match read_task_snapshot(repo_root, run_id) {
-    Some(snapshot_text) =>
-      render_replay_summary(run_id, extract_task_type(snapshot_text))
+    Some(snapshot_text) => {
+      let context_summary = match @infra.read_snapshot_run_context(repo_root, run_id) {
+        Some(context_text) => render_run_context_summary(context_text)
+        None => ""
+      }
+      let decision_label = match @infra.read_snapshot_gate_result(repo_root, run_id) {
+        Some(gate_text) => extract_decision_label(gate_text)
+        None => "Unknown"
+      }
+      let metrics_summary = render_result_metrics_summary(
+        @infra.read_snapshot_scope_result(repo_root, run_id),
+        @infra.read_snapshot_artifact_result(repo_root, run_id),
+      )
+      render_replay_summary(
+        run_id,
+        extract_task_type(snapshot_text),
+        decision_label,
+        context_summary,
+        metrics_summary,
+      )
+    }
     None => render_snapshot_not_found(run_id)
   }
 }
@@ -1030,10 +1114,22 @@ pub fn replay_check(repo_root : String, run_id : String) -> String raise {
 pub fn doctor_repo(repo_root : String) -> String raise {
   let repo_rules_file = repo_rules_path(repo_root)
   let current_task_file = current_task_path(repo_root)
+  let pre_commit_hook = @infra.join_path(repo_root, ".git/hooks/pre-commit")
   let issues = diagnose_missing_files([
     (repo_rules_file, @infra.path_exists(repo_rules_file)),
     (current_task_file, @infra.path_exists(current_task_file)),
   ])
+  let hook_content = match @infra.read_text_if_exists(pre_commit_hook) {
+    Some(content) => content
+    None => ""
+  }
+  for issue in diagnose_pre_commit_hook(
+    pre_commit_hook,
+    @infra.path_exists(pre_commit_hook),
+    content=hook_content,
+  ) {
+    issues.push(issue)
+  }
 
   if @infra.path_exists(repo_rules_file) {
     let repo_rules_text = @infra.read_text(repo_rules_file)
@@ -1105,7 +1201,7 @@ pub fn pack_latest(
 
   let fixed_outputs = collect_pack_files([
     "gate-result.json", "gate-report.md", "scope-result.json", "artifact-result.json",
-    "checked-files.txt", "events.jsonl",
+    "checked-files.txt", "events.jsonl", "run-context.json",
   ])
   for name in fixed_outputs {
     if copy_text_file_if_exists(
@@ -1126,6 +1222,39 @@ pub fn pack_latest(
   for target in export_built_in_acceptance_configs(pack_dir) {
     copied_files.push(target)
   }
+
+  let manifest_files = copied_files + ["pack-manifest.json", "pack-summary.md"]
+  let gate_text = match @infra.read_text_if_exists(@infra.join_path(latest_dir, "gate-result.json")) {
+    Some(content) => content
+    None => ""
+  }
+  let run_context_text = match @infra.read_text_if_exists(
+    @infra.join_path(latest_dir, "run-context.json"),
+  ) {
+    Some(content) => content
+    None => ""
+  }
+  let manifest = build_pack_manifest(
+    actual_mode,
+    match extract_json_string_field(gate_text, "run_id") {
+      Some(run_id) => run_id
+      None => "unknown"
+    },
+    extract_decision_label(gate_text),
+    if run_context_text.trim() == "" {
+      "未记录来源"
+    } else {
+      render_run_context_summary(run_context_text)
+    },
+    manifest_files,
+  )
+  write_json_file(@infra.join_path(pack_dir, "pack-manifest.json"), manifest)
+  @infra.write_text(
+    @infra.join_path(pack_dir, "pack-summary.md"),
+    render_pack_summary(manifest),
+  )
+  copied_files.push("pack-manifest.json")
+  copied_files.push("pack-summary.md")
 
   if copied_files.is_empty() {
     render_pack_failure("未找到可导出的结果文件")
