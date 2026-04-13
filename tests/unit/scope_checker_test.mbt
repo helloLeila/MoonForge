@@ -12,7 +12,13 @@ test "scope checker rejects out of scope files" {
     forbidden_paths: [],
     approval_required_paths: [],
     allowed_extensions: [".tsx"],
+    blocked_extensions: [],
+    generated_artifact_paths: [],
+    blocked_file_names: [],
+    blocked_file_patterns: [],
+    content_blocklist_patterns: [],
     required_artifacts: [],
+    required_commands: [],
     max_changed_files: 8,
   }
   let result = @checkers.check_scope(task, ["backend/src/main/java/App.java"])
@@ -31,7 +37,13 @@ test "scope checker tracks in-scope files and file count limit" {
     forbidden_paths: [],
     approval_required_paths: [],
     allowed_extensions: [".tsx"],
+    blocked_extensions: [],
+    generated_artifact_paths: [],
+    blocked_file_names: [],
+    blocked_file_patterns: [],
+    content_blocklist_patterns: [],
     required_artifacts: [],
+    required_commands: [],
     max_changed_files: 1,
   }
   let result = @checkers.check_scope(task, [
