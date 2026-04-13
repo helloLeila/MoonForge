@@ -547,6 +547,12 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
   let repo_rules_file = repo_rules_path(repo_root)
   if !@infra.path_exists(repo_rules_file) {
     errors.push("仓库规则文件不存在：\{repo_rules_file}")
+  } else {
+    let repo_rules_text = @infra.read_text(repo_rules_file)
+    match validate_repo_rules_text(repo_rules_text) {
+      Err(code) => errors.push("仓库规则文件非法：\{code}")
+      Ok(_) => ()
+    }
   }
   let current_task_file = current_task_path(repo_root)
   if !@infra.path_exists(current_task_file) {

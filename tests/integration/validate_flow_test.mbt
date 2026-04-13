@@ -25,6 +25,21 @@ test "validate passes after init" {
 }
 
 ///|
+/// validate_repo 应在仓库规则文件为空时返回错误。
+test "validate fails when repo rules empty" {
+  let repo = unique_validate_dir("repo-rules-empty")
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.create_task(
+      repo, "feature-change", "Add filter", "frontend/src/pages/**",
+    ),
+  )
+  @infra.write_text(@infra.join_path(repo, ".moonforge/repo-rules.yml"), "")
+  let result = @services.validate_repo(repo)
+  assert_true(result is Err(_))
+}
+
+///|
 /// validate_repo 不应把 init 生成的空白任务样例当作合法任务。
 test "validate fails on blank task sample after init" {
   let repo = unique_validate_dir("blank")
