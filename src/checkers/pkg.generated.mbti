@@ -9,11 +9,15 @@ import {
 // Values
 pub fn build_effective_task(@domain.RepoRules, @domain.TaskTemplate, @domain.CurrentTask) -> @domain.EffectiveTask raise
 
+pub fn check_artifacts(Array[String], Map[String, String]) -> ArtifactCheckResult
+
 pub fn check_file_types(Array[String], Array[String], Array[String]) -> FileTypeResult
 
 pub fn check_risk_paths(Array[String], Array[String], Array[String]) -> RiskPathResult
 
 pub fn check_scope(@domain.EffectiveTask, Array[String]) -> ScopeCheckResult
+
+pub fn collect_artifacts(String, Array[String]) -> Map[String, String] raise
 
 pub fn evaluate_gate(@domain.EffectiveTask, String, Array[String], String) -> @domain.CheckResult
 
@@ -23,11 +27,18 @@ pub fn pick_stricter_limit(Int, Int) -> Int
 
 pub fn validate_current_task(@domain.CurrentTask) -> Result[Unit, String]
 
+pub fn validate_markdown_artifact(String) -> Result[Unit, String]
+
 pub fn validate_template_semantics(String, @domain.TaskTemplate) -> Result[Unit, String]
 
 // Errors
 
 // Types and methods
+pub(all) struct ArtifactCheckResult {
+  missing_artifacts : Array[String]
+  invalid_artifacts : Array[String]
+} derive(@debug.Debug)
+
 pub(all) struct FileTypeResult {
   forbidden_extension_files : Array[String]
   sensitive_files : Array[String]
