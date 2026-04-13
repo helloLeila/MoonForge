@@ -161,6 +161,54 @@ test "validate fails when current task type unknown" {
 }
 
 ///|
+/// validate_repo 应接受仓库内新增模板对应的自定义 task_type。
+test "validate passes when current task type matches custom template" {
+  let repo = unique_validate_dir("custom-task-type")
+  let custom_template =
+    #|task_type: custom-review
+    #|
+    #|allowed_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+    #|forbidden_paths:
+    #|  - "infra/**"
+    #|
+    #|allowed_extensions:
+    #|  - ".ts"
+    #|  - ".tsx"
+    #|
+    #|required_artifacts:
+    #|  - "review.md"
+    #|
+    #|max_changed_files: 8
+    #|
+    #|manual_approval_paths:
+    #|  - "backend/src/main/java/**/service/high-risk/**"
+    #|
+  let custom_task =
+    #|task_type: "custom-review"
+    #|title: "Review list page"
+    #|
+    #|target_groups:
+    #|  - "frontend_pages"
+    #|
+    #|target_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+  ignore(@services.init_repo(repo))
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/task-types/custom-review.yml"),
+    custom_template,
+  )
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+    custom_task,
+  )
+  let result = @services.validate_repo(repo)
+  assert_true(result is Ok(_))
+}
+
+///|
 /// validate_repo 应在当前任务 YAML 语法非法时返回错误，而不是抛出异常。
 test "validate fails when current task yaml invalid" {
   let repo = unique_validate_dir("invalid-task-yaml")

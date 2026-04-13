@@ -105,22 +105,45 @@ fn load_template(
 
 ///|
 /// 校验仓库中的任务模板是否都满足基础语义与可解析性。
+fn collect_repo_template_names(repo_root : String) -> Array[String] raise {
+  let template_names : Array[String] = []
+  for seed in default_templates() {
+    template_names.push(seed.name)
+  }
+  for file_name in @infra.list_dir(task_types_dir(repo_root)) {
+    if file_name.has_suffix(".yml") {
+      let task_type = file_name[0:file_name.length() - 4].to_string()
+      if !template_names.contains(task_type) {
+        template_names.push(task_type)
+      }
+    }
+  }
+  template_names
+}
+
+///|
+/// 根据仓库中的 task-types 目录判断任务类型是否合法。
+fn validate_task_type_in_repo(
+  repo_root : String,
+  task_type : String,
+) -> Result[Unit, String] raise {
+  if collect_repo_template_names(repo_root).contains(task_type) {
+    Ok(())
+  } else {
+    Err("TASK_TYPE_UNKNOWN")
+  }
+}
+
+///|
+/// 校验仓库中的任务模板是否都满足基础语义与可解析性。
 fn validate_all_templates(
   repo_root : String,
   errors : Array[String],
 ) -> Unit {
   let template_names : Array[String] = []
-  for seed in default_templates() {
-    template_names.push(seed.name)
-  }
   try {
-    for file_name in @infra.list_dir(task_types_dir(repo_root)) {
-      if file_name.has_suffix(".yml") {
-        let task_type = file_name[0:file_name.length() - 4].to_string()
-        if !template_names.contains(task_type) {
-          template_names.push(task_type)
-        }
-      }
+    for template_name in collect_repo_template_names(repo_root) {
+      template_names.push(template_name)
     }
   } catch {
     err => errors.push("任务模板目录非法：\{err.to_string()}")
@@ -632,7 +655,7 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
             Err(code) => errors.push("当前任务文件非法：\{code}")
           }
           if errors.is_empty() {
-            match validate_task_type(current_task.task_type) {
+            match validate_task_type_in_repo(repo_root, current_task.task_type) {
               Ok(_) => ()
               Err(code) => errors.push("当前任务文件非法：\{code}")
             }
