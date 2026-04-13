@@ -583,6 +583,20 @@ pub fn report_latest(
 }
 
 ///|
+/// 读取最近一次检查结果，并渲染终端友好的中文摘要。
+pub fn report_summary(
+  repo_root : String,
+  mode? : String = "local",
+) -> String raise {
+  let actual_mode = @adapters.normalize_mode(mode)
+  match @infra.read_latest_gate_result(repo_root, actual_mode) {
+    Some(json_text) =>
+      render_report_summary(extract_decision_label(json_text), actual_mode)
+    None => render_no_result_message(actual_mode)
+  }
+}
+
+///|
 /// 读取指定运行编号的任务快照，并返回 replay 命令摘要。
 pub fn replay_check(repo_root : String, run_id : String) -> String raise {
   if !snapshot_exists(repo_root, run_id) {
@@ -692,7 +706,7 @@ pub fn dispatch_cli_command(
       let result = run_check(repo_root, run, mode=mode)
       summarize_result(result)
     }
-    "report" => report_latest(repo_root, mode=mode)
+    "report" => report_summary(repo_root, mode=mode)
     "validate" => match validate_repo(repo_root) {
       Ok(message) => message
       Err(message) => raise Failure::Failure(message)
