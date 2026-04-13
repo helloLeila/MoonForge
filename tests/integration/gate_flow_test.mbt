@@ -173,6 +173,49 @@ test "feature change missing artifact becomes retryable" {
 }
 
 ///|
+/// 验证默认 config-change 模板允许提交 `.env.example`，不应被后缀规则误杀。
+test "config change allows dot example file" {
+  let repo_root = unique_repo_root("config-example")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/config-example")
+  let diff =
+    #|diff --git a/.env.example b/.env.example
+    #|index 7777777..8888888 100644
+    #|--- a/.env.example
+    #|+++ b/.env.example
+    #|@@ -1,1 +1,2 @@
+    #| APP_NAME=MoonForge
+    #|+APP_MODE=demo
+    #|
+  try {
+    seed_repo(repo_root)
+    @infra.write_text(
+      @infra.join_path(repo_root, ".env.example"),
+      "APP_NAME=MoonForge\n",
+    )
+    ignore(@services.init_repo(repo_root))
+    ignore(
+      @services.create_task(
+        repo_root, "config-change", "Adjust env example", ".env.example",
+      ),
+    )
+    @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff)
+    @infra.write_text(
+      @infra.join_path(run_dir, "config-impact.md"),
+      "# Config Impact\n\nUpdate env example.\n",
+    )
+
+    let result = @services.run_check(repo_root, run_dir)
+    assert_true(result.decision == @domain.Accept)
+    assert_eq(result.forbidden_extension_files, [])
+  } catch {
+    err => {
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
 /// 验证 repo-rules 中的路径组和更严格文件上限，会通过加载链路影响最终门禁结果。
 test "repo rules path groups and stricter max file count affect run check" {
   let repo_root = unique_repo_root("repo-rules")

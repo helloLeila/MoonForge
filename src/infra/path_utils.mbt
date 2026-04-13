@@ -111,12 +111,13 @@ pub fn extension_of(path : String) -> String {
 }
 
 ///|
-/// 判断文件后缀是否命中允许列表。
+/// 判断文件后缀或显式允许文件名是否命中允许列表。
 pub fn has_allowed_extension(path : String, allowed : Array[String]) -> Bool {
   if allowed.is_empty() {
     true
   } else {
-    allowed.contains(extension_of(path))
+    let name = basename(path)
+    allowed.contains(name) || allowed.contains(extension_of(path))
   }
 }
 

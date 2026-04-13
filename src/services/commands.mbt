@@ -260,7 +260,9 @@ fn default_templates() -> Array[TemplateSeed] {
         task_type: "config-change",
         allowed_paths: ["config/**", ".env.example"],
         forbidden_paths: [".env", "scripts/**"],
-        allowed_extensions: [".json", ".yml", ".yaml", ".md", ".properties"],
+        allowed_extensions: [
+          ".json", ".yml", ".yaml", ".md", ".properties", ".env.example",
+        ],
         required_artifacts: ["config-impact.md"],
         max_changed_files: 3,
         manual_approval_paths: [],
