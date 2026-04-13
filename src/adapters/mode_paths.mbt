@@ -1,14 +1,18 @@
 ///|
-/// 文件说明：封装本地模式与 CI 模式下的输出目录、快照目录和运行编号规则，隔离运行环境差异。
-/// 联动文件：由 `src/services/commands.mbt` 调用，为 `check` 与 `report` 命令提供路径定位能力。
+/// 文件说明：封装本地模式、CI 模式与 PR 模式下的输出目录、快照目录和运行编号规则，隔离运行环境差异。
+/// File: Encapsulates output directories, snapshot directories, and run-id rules
+/// for local, CI, and PR modes.
 
 ///|
 
 ///|
 /// 根据命令行入参统一收敛运行模式，避免业务层重复判断字符串。
+/// Normalizes the CLI mode so service code does not repeat string branching.
 pub fn normalize_mode(mode : String) -> String {
   let trimmed = mode.trim().to_string()
-  if trimmed == "ci" {
+  if trimmed == "pr" {
+    "pr"
+  } else if trimmed == "ci" {
     "ci"
   } else {
     "local"

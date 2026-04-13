@@ -78,3 +78,43 @@ test "ci diff adapter requires github actions env" {
 
   assert_eq(@adapters.read_ci_diff(github_env, patch_path), diff)
 }
+
+///|
+/// `pr` 模式应写入独立输出目录，并要求存在 pull request 上下文。
+/// `pr` mode should write to its own output directory and require pull-request context.
+test "pr diff adapter requires pull request metadata" {
+  let run_dir = @infra.join_path("tmp", "moonforge-diff-pr")
+  let diff =
+    #|diff --git a/src/pr.mbt b/src/pr.mbt
+    #|index 111..222 100644
+    #|--- a/src/pr.mbt
+    #|+++ b/src/pr.mbt
+    #|@@ -1,1 +1,1 @@
+    #|-old
+    #|+new
+  let patch_path = @infra.join_path(run_dir, "patch.diff")
+  @infra.write_text(patch_path, diff)
+
+  let missing_pr_env : Map[String, String] = {
+    "GITHUB_ACTIONS": "true",
+    "GITHUB_EVENT_NAME": "pull_request",
+  }
+  let pr_env : Map[String, String] = {
+    "GITHUB_ACTIONS": "true",
+    "GITHUB_EVENT_NAME": "pull_request",
+    "GITHUB_BASE_REF": "main",
+    "GITHUB_HEAD_REF": "feature/search",
+  }
+
+  assert_eq(@adapters.normalize_mode("pr"), "pr")
+  assert_true(@adapters.latest_output_dir("/tmp/demo", "pr").contains("/pr/latest"))
+
+  try {
+    ignore(@adapters.read_pr_diff(missing_pr_env, patch_path))
+    panic()
+  } catch {
+    err => assert_true(err.to_string().contains("PR_CONTEXT_NOT_FOUND"))
+  }
+
+  assert_eq(@adapters.read_pr_diff(pr_env, patch_path), diff)
+}

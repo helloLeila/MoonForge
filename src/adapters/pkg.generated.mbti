@@ -4,7 +4,17 @@ package "leila/moonforge_gate/src/adapters"
 // Values
 pub fn current_env() -> Map[String, String]
 
+pub fn github_base_ref(Map[String, String]) -> String?
+
+pub fn github_event_name(Map[String, String]) -> String?
+
+pub fn github_head_ref(Map[String, String]) -> String?
+
+pub fn github_pr_number(Map[String, String]) -> String?
+
 pub fn is_github_actions_env(Map[String, String]) -> Bool
+
+pub fn is_pull_request_event(Map[String, String]) -> Bool
 
 pub fn latest_output_dir(String, String) -> String
 
@@ -13,6 +23,8 @@ pub fn normalize_mode(String) -> String
 pub fn read_ci_diff(Map[String, String], String) -> String raise
 
 pub fn read_local_diff(String) -> String raise
+
+pub fn read_pr_diff(Map[String, String], String) -> String raise
 
 pub fn run_id_from_run_dir(String) -> String
 
