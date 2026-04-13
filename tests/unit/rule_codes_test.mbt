@@ -28,6 +28,35 @@ test "decision view exposes retryable branch in bilingual fields" {
 }
 
 ///|
+/// 验证拒绝放行分支也会通过同一映射源输出一致结果。
+test "decision view exposes reject branch in bilingual fields" {
+  let decision = @domain.DecisionView::from_decision(@domain.Reject)
+  assert_eq(decision.code, "Reject")
+  assert_eq(decision.text_zh, "拒绝放行")
+  assert_eq(decision.text_en, "reject")
+  assert_eq(decision.action_zh, "撤回越界修改或缩小变更范围后重新提交")
+  assert_eq(@domain.Reject.label(), "Reject")
+  assert_eq(@domain.Reject.summary(), "拒绝放行")
+  assert_eq(@domain.Reject.next_action(), "撤回越界修改或缩小变更范围后重新提交")
+}
+
+///|
+/// 验证需要人工审批分支也会通过同一映射源输出一致结果。
+test "decision view exposes human approval branch in bilingual fields" {
+  let decision = @domain.DecisionView::from_decision(@domain.NeedHumanApproval)
+  assert_eq(decision.code, "NeedHumanApproval")
+  assert_eq(decision.text_zh, "需要人工审批")
+  assert_eq(decision.text_en, "need human approval")
+  assert_eq(decision.action_zh, "转人工审批或拆分高风险修改")
+  assert_eq(@domain.NeedHumanApproval.label(), "NeedHumanApproval")
+  assert_eq(@domain.NeedHumanApproval.summary(), "需要人工审批")
+  assert_eq(
+    @domain.NeedHumanApproval.next_action(),
+    "转人工审批或拆分高风险修改",
+  )
+}
+
+///|
 /// 验证违规项可以从领域模型转换为对外视图，并保留中文处置建议。
 test "violation view converts from violation domain object" {
   let violation = @domain.Violation::{
