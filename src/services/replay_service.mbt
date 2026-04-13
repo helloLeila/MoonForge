@@ -17,10 +17,7 @@ pub fn snapshot_exists(repo_root : String, run_id : String) -> Bool raise {
 /// 入参：`repo_root`，仓库根目录路径。
 /// 入参：`run_id`，需要重放的运行标识符。
 /// 出参：task.snapshot.json 的原始文本内容，文件不存在时返回 `None`。
-pub fn read_task_snapshot(
-  repo_root : String,
-  run_id : String,
-) -> String? raise {
+pub fn read_task_snapshot(repo_root : String, run_id : String) -> String? raise {
   let path = @infra.join_path(
     @adapters.snapshot_dir(repo_root, run_id),
     "task.snapshot.json",
@@ -32,12 +29,21 @@ pub fn read_task_snapshot(
 /// 从任务快照 JSON 文本里提取任务类型字段，解析失败时回落为 Unknown。
 pub fn extract_task_type(snapshot_text : String) -> String {
   if snapshot_text.contains("\"task_type\"") {
-    let lines = snapshot_text.split("\n").map(line => line.trim().to_string()).collect()
+    let lines = snapshot_text
+      .split("\n")
+      .map(line => line.trim().to_string())
+      .collect()
     for line in lines {
       if line.has_prefix("\"task_type\"") {
-        let parts = line.split(":").map(item => item.trim().to_string()).collect()
+        let parts = line
+          .split(":")
+          .map(item => item.trim().to_string())
+          .collect()
         if parts.length() >= 2 {
-          return parts[1].trim_start(chars="\"").trim_end(chars="\",").to_string()
+          return parts[1]
+            .trim_start(chars="\"")
+            .trim_end(chars="\",")
+            .to_string()
         }
       }
     }

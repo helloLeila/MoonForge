@@ -29,6 +29,8 @@ test "artifact checker rejects empty markdown body" {
 ///|
 /// 包含正文段落的 Markdown 应通过校验。
 test "artifact checker accepts markdown with body" {
-  let result = @checkers.validate_markdown_artifact("# API\n\n正文内容在此。\n")
+  let result = @checkers.validate_markdown_artifact(
+    "# API\n\n正文内容在此。\n",
+  )
   assert_true(result is Ok(_))
 }

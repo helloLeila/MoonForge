@@ -65,7 +65,9 @@ pub fn diagnose_yaml_syntax(content : String) -> Array[String] {
   for line in lines {
     line_num = line_num + 1
     let trimmed = line.trim()
-    if trimmed.has_prefix("-") && !trimmed.has_prefix("- ") && trimmed.length() > 1 {
+    if trimmed.has_prefix("-") &&
+      !trimmed.has_prefix("- ") &&
+      trimmed.length() > 1 {
       issues.push("第 \{line_num} 行：列表项缺少空格")
     }
   }

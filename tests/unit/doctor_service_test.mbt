@@ -39,9 +39,7 @@ test "diagnose_required_fields detects missing keys" {
 /// 应能渲染完整的诊断报告，包含所有问题项。
 test "render_doctor_report shows all issues" {
   let report = @services.render_doctor_report([
-    "缺失文件：repo-rules.yml",
-    "空文件：current-task.yml",
-    "缺少字段：target_paths",
+    "缺失文件：repo-rules.yml", "空文件：current-task.yml", "缺少字段：target_paths",
   ])
   assert_true(report.contains("repo-rules.yml"))
   assert_true(report.contains("current-task.yml"))

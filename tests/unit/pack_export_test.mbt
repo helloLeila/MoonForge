@@ -29,10 +29,7 @@ test "pack latest exports fixed input and output files" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Pack filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Pack filter", "frontend/src/pages/**",
     ),
   )
   @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff)
@@ -55,12 +52,16 @@ test "pack latest exports fixed input and output files" {
   )
   assert_true(
     @infra.path_exists(
-      @infra.join_path(repo, ".moonforge/out/local/packs/latest/current-task.yml"),
+      @infra.join_path(
+        repo, ".moonforge/out/local/packs/latest/current-task.yml",
+      ),
     ),
   )
   assert_true(
     @infra.path_exists(
-      @infra.join_path(repo, ".moonforge/out/local/packs/latest/gate-result.json"),
+      @infra.join_path(
+        repo, ".moonforge/out/local/packs/latest/gate-result.json",
+      ),
     ),
   )
   assert_true(

@@ -29,10 +29,7 @@ test "replay command reads snapshot after check" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Replay integration",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Replay integration", "frontend/src/pages/**",
     ),
   )
   @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff)

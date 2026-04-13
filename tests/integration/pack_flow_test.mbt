@@ -29,10 +29,7 @@ test "pack command exports latest acceptance files" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Pack integration",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Pack integration", "frontend/src/pages/**",
     ),
   )
   @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff)
@@ -51,7 +48,9 @@ test "pack command exports latest acceptance files" {
   assert_true(message.contains("打包完成"))
   assert_true(
     @infra.path_exists(
-      @infra.join_path(repo, ".moonforge/out/local/packs/latest/gate-result.json"),
+      @infra.join_path(
+        repo, ".moonforge/out/local/packs/latest/gate-result.json",
+      ),
     ),
   )
   assert_true(

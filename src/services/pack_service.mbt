@@ -8,7 +8,9 @@
 /// 出参：过滤后的结果文件名数组。
 pub fn collect_pack_files(filenames : Array[String]) -> Array[String] {
   filenames.filter(fn(name) {
-    name.has_suffix(".json") || name.has_suffix(".md") || name.has_suffix(".txt") ||
+    name.has_suffix(".json") ||
+    name.has_suffix(".md") ||
+    name.has_suffix(".txt") ||
     name.has_suffix(".jsonl")
   })
 }

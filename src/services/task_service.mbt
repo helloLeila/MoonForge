@@ -46,11 +46,7 @@ pub fn render_current_task_yaml(
 /// 出参：`Result[Unit, String]`，有效时返回 `Ok(())`，无效时返回 `Err("TASK_TYPE_UNKNOWN")`。
 pub fn validate_task_type(task_type : String) -> Result[Unit, String] {
   let known : Array[String] = [
-    "feature-change",
-    "bug-fix",
-    "api-change",
-    "config-change",
-    "test-addition",
+    "feature-change", "bug-fix", "api-change", "config-change", "test-addition",
   ]
   if known.contains(task_type) {
     Ok(())

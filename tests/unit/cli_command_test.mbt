@@ -15,10 +15,7 @@ test "cli dispatches validate command" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Add filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Add filter", "frontend/src/pages/**",
     ),
   )
 
@@ -47,16 +44,10 @@ test "cli dispatches replay command" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Replay filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Replay filter", "frontend/src/pages/**",
     ),
   )
-  @infra.write_text(
-    @infra.join_path(run_dir, "patch.diff"),
-    diff,
-  )
+  @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff)
   @infra.write_text(
     @infra.join_path(run_dir, "test-report.json"),
     "{\n  \"passed\": true\n}\n",
@@ -83,10 +74,7 @@ test "cli dispatches doctor command" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Doctor filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Doctor filter", "frontend/src/pages/**",
     ),
   )
 
@@ -123,10 +111,7 @@ test "cli dispatches report summary" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Report filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Report filter", "frontend/src/pages/**",
     ),
   )
   @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff)
@@ -165,10 +150,7 @@ test "cli dispatches pack command" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Pack command",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Pack command", "frontend/src/pages/**",
     ),
   )
   @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff)

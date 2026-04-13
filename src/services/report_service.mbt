@@ -13,7 +13,10 @@ pub fn extract_decision_label(json_text : String) -> String {
       if line.has_prefix("\"decision\"") {
         let parts = line.split(":").map(p => p.trim().to_string()).collect()
         if parts.length() >= 2 {
-          let value = parts[1].trim_start(chars="\"").trim_end(chars="\",").to_string()
+          let value = parts[1]
+            .trim_start(chars="\"")
+            .trim_end(chars="\",")
+            .to_string()
           return value
         }
       }

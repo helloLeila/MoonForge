@@ -32,8 +32,14 @@ test "task validator rejects blank task type or title" {
     target_paths: [],
   }
 
-  assert_eq(@checkers.validate_current_task(blank_task_type), Err("TASK_FILE_INVALID"))
-  assert_eq(@checkers.validate_current_task(blank_title), Err("TASK_FILE_INVALID"))
+  assert_eq(
+    @checkers.validate_current_task(blank_task_type),
+    Err("TASK_FILE_INVALID"),
+  )
+  assert_eq(
+    @checkers.validate_current_task(blank_title),
+    Err("TASK_FILE_INVALID"),
+  )
 }
 
 ///|

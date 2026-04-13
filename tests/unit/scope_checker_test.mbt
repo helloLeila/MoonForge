@@ -35,14 +35,12 @@ test "scope checker tracks in-scope files and file count limit" {
     max_changed_files: 1,
   }
   let result = @checkers.check_scope(task, [
-    "frontend/src/pages/UserList/index.tsx",
-    "frontend/src/components/UserCard.tsx",
+    "frontend/src/pages/UserList/index.tsx", "frontend/src/components/UserCard.tsx",
   ])
 
   assert_eq(result.out_of_scope_files, [])
   assert_eq(result.target_paths_hit, [
-    "frontend/src/pages/UserList/index.tsx",
-    "frontend/src/components/UserCard.tsx",
+    "frontend/src/pages/UserList/index.tsx", "frontend/src/components/UserCard.tsx",
   ])
   assert_true(result.file_count_exceeded)
 }

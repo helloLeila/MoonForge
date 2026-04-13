@@ -23,7 +23,9 @@ test "risk checker keeps approval paths separate" {
   let result = @checkers.check_risk_paths(
     ["backend/src/main/java/**/security/**"],
     ["backend/src/main/java/**/service/high-risk/**"],
-    ["backend/src/main/java/com/acme/user/service/high-risk/UserAuditService.java"],
+    [
+      "backend/src/main/java/com/acme/user/service/high-risk/UserAuditService.java",
+    ],
   )
 
   assert_eq(result.protected_files, [])

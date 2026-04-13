@@ -16,9 +16,7 @@ test "init creates repo rules and five templates" {
   let repo = unique_init_dir("init")
   ignore(@services.init_repo(repo))
   assert_true(
-    @infra.path_exists(
-      @infra.join_path(repo, ".moonforge/repo-rules.yml"),
-    ),
+    @infra.path_exists(@infra.join_path(repo, ".moonforge/repo-rules.yml")),
   )
   assert_true(
     @infra.path_exists(
@@ -60,16 +58,11 @@ test "create task writes current task file" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Add user filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Add user filter", "frontend/src/pages/**",
     ),
   )
   assert_true(
-    @infra.path_exists(
-      @infra.join_path(repo, ".moonforge/current-task.yml"),
-    ),
+    @infra.path_exists(@infra.join_path(repo, ".moonforge/current-task.yml")),
   )
   let content = @infra.read_text(
     @infra.join_path(repo, ".moonforge/current-task.yml"),
@@ -84,10 +77,7 @@ test "create task writes target groups when group selected" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Add grouped filter",
-      "@frontend_pages",
+      repo, "feature-change", "Add grouped filter", "@frontend_pages",
     ),
   )
   let content = @infra.read_text(

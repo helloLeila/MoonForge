@@ -80,7 +80,11 @@ fn cli() -> @argparse.Command {
         about="Replay a historical gate run from snapshot files",
         options=[
           @argparse.OptionArg("repo", about="Target repo root", required=true),
-          @argparse.OptionArg("run-id", about="Historical run id", required=true),
+          @argparse.OptionArg(
+            "run-id",
+            about="Historical run id",
+            required=true,
+          ),
         ],
       ),
       @argparse.Command(
@@ -104,6 +108,7 @@ fn cli() -> @argparse.Command {
   )
 }
 
+///|
 fn main {
   try {
     let matches = cli().parse()
@@ -114,7 +119,9 @@ fn main {
 
     match name {
       "init" =>
-        println(@services.dispatch_cli_command(name, option_value(child, "repo")))
+        println(
+          @services.dispatch_cli_command(name, option_value(child, "repo")),
+        )
       "task" =>
         println(
           @services.dispatch_cli_command(
@@ -143,7 +150,9 @@ fn main {
           ),
         )
       "validate" =>
-        println(@services.dispatch_cli_command(name, option_value(child, "repo")))
+        println(
+          @services.dispatch_cli_command(name, option_value(child, "repo")),
+        )
       "replay" =>
         println(
           @services.dispatch_cli_command(
@@ -153,7 +162,9 @@ fn main {
           ),
         )
       "doctor" =>
-        println(@services.dispatch_cli_command(name, option_value(child, "repo")))
+        println(
+          @services.dispatch_cli_command(name, option_value(child, "repo")),
+        )
       "pack" =>
         println(
           @services.dispatch_cli_command(

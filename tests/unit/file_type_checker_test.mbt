@@ -5,11 +5,9 @@
 ///|
 /// 敏感文件名应优先于后缀规则被识别。
 test "file type checker blocks env file" {
-  let result = @checkers.check_file_types(
-    [".mbt", ".md", ".json"],
-    [".env"],
-    [".env"],
-  )
+  let result = @checkers.check_file_types([".mbt", ".md", ".json"], [".env"], [
+    ".env",
+  ])
 
   assert_eq(result.forbidden_extension_files, [])
   assert_eq(result.sensitive_files, [".env"])
@@ -18,11 +16,9 @@ test "file type checker blocks env file" {
 ///|
 /// 非敏感但后缀不在允许列表中的文件应落入非法后缀列表。
 test "file type checker marks forbidden extension" {
-  let result = @checkers.check_file_types(
-    [".mbt", ".md", ".json"],
-    [".env"],
-    ["frontend/src/pages/UserList/index.tsx"],
-  )
+  let result = @checkers.check_file_types([".mbt", ".md", ".json"], [".env"], [
+    "frontend/src/pages/UserList/index.tsx",
+  ])
 
   assert_eq(result.forbidden_extension_files, [
     "frontend/src/pages/UserList/index.tsx",
