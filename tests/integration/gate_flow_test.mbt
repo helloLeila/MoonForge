@@ -36,6 +36,23 @@ fn seed_repo(repo_root : String) -> Unit raise {
 }
 
 ///|
+/// 初始化一个最小 React 首页仓库，用于覆盖 pre-commit 规则场景。
+fn seed_homepage_repo(repo_root : String) -> Unit raise {
+  @infra.write_text(
+    @infra.join_path(repo_root, "src/components/WorkLinks.jsx"),
+    "export function WorkLinks() {\n  return \"links\"\n}\n",
+  )
+  @infra.write_text(
+    @infra.join_path(repo_root, "src/data/siteContent.js"),
+    "export const siteContent = { workLinks: [] }\n",
+  )
+  @infra.write_text(
+    @infra.join_path(repo_root, "src/core/request.js"),
+    "export const request = () => \"ok\"\n",
+  )
+}
+
+///|
 /// 创建功能变更模板对应的当前任务，并允许测试用例注入不同目标路径。
 fn feature_task(repo_root : String, paths_csv : String) -> Unit raise {
   ignore(@services.init_repo(repo_root))
@@ -123,6 +140,164 @@ fn seed_run(
 }
 
 ///|
+/// 写入收紧后的 React 首页规则，用于覆盖 AI coding 的高频 pre-commit 问题。
+fn seed_homepage_rules(repo_root : String) -> Unit raise {
+  let repo_rules =
+    #|protected_paths:
+    #|  - "src/core/**"
+    #|approval_required_paths:
+    #|default_allowed_extensions:
+    #|  - ".js"
+    #|  - ".jsx"
+    #|blocked_extensions:
+    #|  - ".map"
+    #|  - ".snap"
+    #|generated_artifact_paths:
+    #|  - "dist/**"
+    #|  - "build/**"
+    #|  - "coverage/**"
+    #|  - ".next/**"
+    #|blocked_file_names:
+    #|  - ".DS_Store"
+    #|blocked_file_patterns:
+    #|content_blocklist_patterns:
+    #|  - "console.log"
+    #|  - "debugger"
+    #|  - "printf"
+    #|  - "println"
+    #|  - "TODO"
+    #|  - "FIXME"
+    #|max_changed_files: 2
+    #|path_groups.homepage_links:
+    #|  - "src/components/WorkLinks.jsx"
+    #|  - "src/data/siteContent.js"
+    #|
+  let template =
+    #|task_type: homepage-links
+    #|
+    #|allowed_paths:
+    #|  - "src/components/WorkLinks.jsx"
+    #|  - "src/data/siteContent.js"
+    #|  - "dist/**"
+    #|
+    #|forbidden_paths:
+    #|
+    #|allowed_extensions:
+    #|  - ".js"
+    #|  - ".jsx"
+    #|
+    #|required_artifacts:
+    #|  - "preview-report.json"
+    #|
+    #|required_commands:
+    #|  - "test -f src/components/WorkLinks.jsx"
+    #|
+    #|max_changed_files: 2
+    #|
+    #|manual_approval_paths:
+    #|
+  let artifact_schema =
+    #|artifact_name: preview-report.json
+    #|
+    #|required_fields:
+    #|  - "section"
+    #|  - "status"
+    #|  - "summary"
+    #|
+    #|optional_fields:
+    #|
+    #|allowed_values:
+    #|
+  ignore(@services.init_repo(repo_root))
+  @infra.write_text(
+    @infra.join_path(repo_root, ".moonforge/repo-rules.yml"),
+    repo_rules,
+  )
+  @infra.write_text(
+    @infra.join_path(repo_root, ".moonforge/task-types/homepage-links.yml"),
+    template,
+  )
+  @infra.write_text(
+    @infra.join_path(
+      repo_root, ".moonforge/artifact-schemas/preview-report.yml",
+    ),
+    artifact_schema,
+  )
+}
+
+///|
+/// 创建 React 首页链接变更任务。
+fn homepage_task(repo_root : String, paths_csv : String) -> Unit raise {
+  ignore(
+    @services.create_task(
+      repo_root, "homepage-links", "Update homepage links", paths_csv,
+    ),
+  )
+}
+
+///|
+/// 构造一个合法的首页链接更新 diff。
+fn homepage_pass_diff() -> String {
+  let diff =
+    #|diff --git a/src/components/WorkLinks.jsx b/src/components/WorkLinks.jsx
+    #|index 1111111..2222222 100644
+    #|--- a/src/components/WorkLinks.jsx
+    #|+++ b/src/components/WorkLinks.jsx
+    #|@@ -1,3 +1,4 @@
+    #| export function WorkLinks() {
+    #|+  const links = ["github"]
+    #|   return "links"
+    #| }
+    #|
+  diff
+}
+
+///|
+/// 构造一个包含调试残留的首页 diff。
+fn homepage_debug_diff() -> String {
+  let diff =
+    #|diff --git a/src/components/WorkLinks.jsx b/src/components/WorkLinks.jsx
+    #|index 1111111..2222222 100644
+    #|--- a/src/components/WorkLinks.jsx
+    #|+++ b/src/components/WorkLinks.jsx
+    #|@@ -1,3 +1,4 @@
+    #| export function WorkLinks() {
+    #|+  console.log("debug links")
+    #|   return "links"
+    #| }
+    #|
+  diff
+}
+
+///|
+/// 构造一个误提交生成产物的 diff。
+fn homepage_generated_artifact_diff() -> String {
+  let diff =
+    #|diff --git a/dist/assets/index.js b/dist/assets/index.js
+    #|new file mode 100644
+    #|--- /dev/null
+    #|+++ b/dist/assets/index.js
+    #|@@ -0,0 +1,1 @@
+    #|+console.log("built")
+    #|
+  diff
+}
+
+///|
+/// 写入 React 首页运行目录的 patch 和预览材料。
+fn seed_homepage_run(
+  run_dir : String,
+  diff_text : String,
+  preview_content? : String = "{\n  \"section\": \"worklinks\",\n  \"status\": \"ok\",\n  \"summary\": \"preview checked\"\n}\n",
+) -> Unit raise {
+  @infra.write_text(@infra.join_path(run_dir, "patch.diff"), diff_text)
+  @infra.write_text(
+    @infra.join_path(run_dir, "preview-report.json"),
+    preview_content,
+  )
+}
+
+///|
 /// 验证合法变更且材料齐全时，会输出允许放行结论和结果文件。
 test "feature change pass flow writes accept outputs" {
   let repo_root = unique_repo_root("pass")
@@ -143,6 +318,143 @@ test "feature change pass flow writes accept outputs" {
     )
     let report = @services.report_latest(repo_root)
     assert_true(report.contains("Accept"))
+  } catch {
+    err => {
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
+/// 验证必需校验命令失败时，会进入 Retryable 分支而不是直接拒绝。
+test "required command failure becomes retryable" {
+  let repo_root = unique_repo_root("command-retry")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/command-retry")
+  let failing_template =
+    #|task_type: homepage-links
+    #|
+    #|allowed_paths:
+    #|  - "src/components/WorkLinks.jsx"
+    #|  - "src/data/siteContent.js"
+    #|
+    #|forbidden_paths:
+    #|
+    #|allowed_extensions:
+    #|  - ".js"
+    #|  - ".jsx"
+    #|
+    #|required_artifacts:
+    #|  - "preview-report.json"
+    #|
+    #|required_commands:
+    #|  - "test -f missing.file"
+    #|
+    #|max_changed_files: 2
+    #|
+    #|manual_approval_paths:
+    #|
+  try {
+    seed_homepage_repo(repo_root)
+    seed_homepage_rules(repo_root)
+    @infra.write_text(
+      @infra.join_path(repo_root, ".moonforge/task-types/homepage-links.yml"),
+      failing_template,
+    )
+    homepage_task(
+      repo_root, "src/components/WorkLinks.jsx,src/data/siteContent.js",
+    )
+    seed_homepage_run(run_dir, homepage_pass_diff())
+
+    let result = @services.run_check(repo_root, run_dir)
+    assert_true(result.decision == @domain.Retryable)
+    assert_true(
+      result.violations.any(fn(item) { item.code == "REQUIRED_COMMAND_FAILED" }),
+    )
+  } catch {
+    err => {
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
+/// 验证误提交生成产物时，会命中生成物拦截而直接拒绝。
+test "generated artifact path becomes reject" {
+  let repo_root = unique_repo_root("generated-artifact")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/generated-artifact")
+  try {
+    seed_homepage_repo(repo_root)
+    seed_homepage_rules(repo_root)
+    homepage_task(
+      repo_root, "src/components/WorkLinks.jsx,src/data/siteContent.js",
+    )
+    seed_homepage_run(run_dir, homepage_generated_artifact_diff())
+
+    let result = @services.run_check(repo_root, run_dir)
+    assert_true(result.decision == @domain.Reject)
+    assert_true(
+      result.violations.any(fn(item) {
+        item.code == "GENERATED_ARTIFACT_TOUCHED"
+      }),
+    )
+  } catch {
+    err => {
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
+/// 验证调试残留会在提交前被直接拦截。
+test "debug residue becomes reject" {
+  let repo_root = unique_repo_root("debug-residue")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/debug-residue")
+  try {
+    seed_homepage_repo(repo_root)
+    seed_homepage_rules(repo_root)
+    homepage_task(
+      repo_root, "src/components/WorkLinks.jsx,src/data/siteContent.js",
+    )
+    seed_homepage_run(run_dir, homepage_debug_diff())
+
+    let result = @services.run_check(repo_root, run_dir)
+    assert_true(result.decision == @domain.Reject)
+    assert_true(
+      result.violations.any(fn(item) { item.code == "CONTENT_PATTERN_BLOCKED" }),
+    )
+  } catch {
+    err => {
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
+/// 验证预览材料存在但结构不合法时，会要求修复后重试。
+test "invalid preview artifact becomes retryable" {
+  let repo_root = unique_repo_root("artifact-invalid")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/artifact-invalid")
+  try {
+    seed_homepage_repo(repo_root)
+    seed_homepage_rules(repo_root)
+    homepage_task(
+      repo_root, "src/components/WorkLinks.jsx,src/data/siteContent.js",
+    )
+    seed_homepage_run(
+      run_dir,
+      homepage_pass_diff(),
+      preview_content="{\n  \"section\": \"worklinks\",\n  \"summary\": \"missing status\"\n}\n",
+    )
+
+    let result = @services.run_check(repo_root, run_dir)
+    assert_true(result.decision == @domain.Retryable)
+    assert_true(
+      result.violations.any(fn(item) { item.code == "ARTIFACT_INVALID" }),
+    )
   } catch {
     err => {
       println(err.to_string())
