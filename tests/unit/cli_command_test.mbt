@@ -75,3 +75,21 @@ test "cli dispatches replay command" {
   assert_true(output.contains(result.run_id))
   assert_true(output.contains("feature-change"))
 }
+
+///|
+/// doctor 子命令应返回仓库接入状态诊断摘要。
+test "cli dispatches doctor command" {
+  let repo = unique_cli_repo("doctor")
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.create_task(
+      repo,
+      "feature-change",
+      "Doctor filter",
+      "frontend/src/pages/**",
+    ),
+  )
+
+  let output = @services.dispatch_cli_command("doctor", repo)
+  assert_true(output.contains("配置健康"))
+}

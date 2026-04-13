@@ -83,6 +83,13 @@ fn cli() -> @argparse.Command {
           @argparse.OptionArg("run-id", about="Historical run id", required=true),
         ],
       ),
+      @argparse.Command(
+        "doctor",
+        about="Diagnose repository onboarding status and config health",
+        options=[
+          @argparse.OptionArg("repo", about="Target repo root", required=true),
+        ],
+      ),
     ],
   )
 }
@@ -135,6 +142,8 @@ fn main {
             run_id=option_value(child, "run-id"),
           ),
         )
+      "doctor" =>
+        println(@services.dispatch_cli_command(name, option_value(child, "repo")))
       _ => raise Failure::Failure("Unsupported subcommand: \{name}")
     }
   } catch {

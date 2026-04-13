@@ -596,6 +596,56 @@ pub fn replay_check(repo_root : String, run_id : String) -> String raise {
 }
 
 ///|
+/// 诊断仓库接入状态，汇总缺失文件、空文件、缺少字段和 YAML 语法问题。
+pub fn doctor_repo(repo_root : String) -> String raise {
+  let repo_rules_file = repo_rules_path(repo_root)
+  let current_task_file = current_task_path(repo_root)
+  let issues = diagnose_missing_files([
+    (repo_rules_file, @infra.path_exists(repo_rules_file)),
+    (current_task_file, @infra.path_exists(current_task_file)),
+  ])
+
+  if @infra.path_exists(repo_rules_file) {
+    let repo_rules_text = @infra.read_text(repo_rules_file)
+    for issue in diagnose_empty_files([(repo_rules_file, repo_rules_text)]) {
+      issues.push(issue)
+    }
+    for issue in diagnose_required_fields(
+      repo_rules_text,
+      [
+        "protected_paths",
+        "approval_required_paths",
+        "default_allowed_extensions",
+        "path_groups",
+      ],
+    ) {
+      issues.push(issue)
+    }
+    for issue in diagnose_yaml_syntax(repo_rules_text) {
+      issues.push(issue)
+    }
+  }
+
+  if @infra.path_exists(current_task_file) {
+    let current_task_text = @infra.read_text(current_task_file)
+    for issue in diagnose_empty_files([(current_task_file, current_task_text)]) {
+      issues.push(issue)
+    }
+    for issue in diagnose_required_fields(
+      current_task_text,
+      ["task_type", "title", "target_paths"],
+    ) {
+      issues.push(issue)
+    }
+    for issue in diagnose_yaml_syntax(current_task_text) {
+      issues.push(issue)
+    }
+  }
+
+  render_doctor_report(issues)
+}
+
+///|
 /// 将检查结果压缩为终端展示用的摘要文本。
 pub fn summarize_result(result : @domain.CheckResult) -> String {
   let lines : Array[String] = [
@@ -648,6 +698,7 @@ pub fn dispatch_cli_command(
       Err(message) => raise Failure::Failure(message)
     }
     "replay" => replay_check(repo_root, run_id)
+    "doctor" => doctor_repo(repo_root)
     _ => raise Failure::Failure("Unsupported subcommand: \{command_name}")
   }
 }
