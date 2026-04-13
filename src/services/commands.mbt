@@ -104,6 +104,29 @@ fn load_template(
 }
 
 ///|
+/// 校验仓库中的任务模板是否都满足基础语义与可解析性。
+fn validate_all_templates(
+  repo_root : String,
+  errors : Array[String],
+) -> Unit {
+  for seed in default_templates() {
+    try {
+      let template = load_template(repo_root, seed.name)
+      match
+        @checkers.validate_template_semantics(
+          @infra.template_yaml_file_name(seed.name),
+          template,
+        ) {
+        Ok(_) => ()
+        Err(code) => errors.push("任务模板文件非法：\{seed.name}: \{code}")
+      }
+    } catch {
+      err => errors.push("任务模板文件非法：\{seed.name}: \{err.to_string()}")
+    }
+  }
+}
+
+///|
 /// 读取当前正在执行的任务描述。
 fn load_current_task(repo_root : String) -> @domain.CurrentTask raise {
   let yaml = @infra.read_flat_yaml(current_task_path(repo_root))
@@ -565,6 +588,7 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
           Ok(_) => {
             try {
               ignore(load_repo_rules(repo_root))
+              validate_all_templates(repo_root, errors)
             } catch {
               err => errors.push("仓库规则文件非法：\{err.to_string()}")
             }
@@ -590,14 +614,6 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
             try {
               let repo_rules = load_repo_rules(repo_root)
               let template = load_template(repo_root, current_task.task_type)
-              match
-                @checkers.validate_template_semantics(
-                  @infra.template_yaml_file_name(current_task.task_type),
-                  template,
-                ) {
-                Ok(_) => ()
-                Err(code) => errors.push("任务模板文件非法：\{code}")
-              }
               if errors.is_empty() {
                 try {
                   ignore(

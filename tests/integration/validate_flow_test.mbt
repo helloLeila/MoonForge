@@ -290,3 +290,41 @@ test "validate fails when active template yaml invalid" {
   let result = @services.validate_repo(repo)
   assert_true(result is Err(_))
 }
+
+///|
+/// validate_repo 应在非活动模板语义非法时同样返回错误。
+test "validate fails when inactive template semantics invalid" {
+  let repo = unique_validate_dir("inactive-template")
+  let invalid_template =
+    #|task_type: bug-fix
+    #|
+    #|allowed_paths:
+    #|  - "frontend/src/**"
+    #|
+    #|forbidden_paths:
+    #|  - "backend/src/main/java/**/payment/**"
+    #|
+    #|allowed_extensions:
+    #|  - ".ts"
+    #|
+    #|required_artifacts:
+    #|  - "bug-context.md"
+    #|
+    #|max_changed_files: 0
+    #|
+    #|manual_approval_paths:
+    #|  - "backend/src/main/java/**/service/high-risk/**"
+    #|
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.create_task(
+      repo, "feature-change", "Add filter", "frontend/src/pages/**",
+    ),
+  )
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/task-types/bug-fix.yml"),
+    invalid_template,
+  )
+  let result = @services.validate_repo(repo)
+  assert_true(result is Err(_))
+}
