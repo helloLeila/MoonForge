@@ -551,7 +551,19 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
     let repo_rules_text = @infra.read_text(repo_rules_file)
     match validate_repo_rules_text(repo_rules_text) {
       Err(code) => errors.push("仓库规则文件非法：\{code}")
-      Ok(_) => ()
+      Ok(_) =>
+        match validate_required_fields(
+          repo_rules_text,
+          [
+            "protected_paths",
+            "approval_required_paths",
+            "default_allowed_extensions",
+            "path_groups",
+          ],
+        ) {
+          Err(field) => errors.push("仓库规则文件缺少字段：\{field}")
+          Ok(_) => ()
+        }
     }
   }
   let current_task_file = current_task_path(repo_root)
