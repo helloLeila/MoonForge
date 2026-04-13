@@ -9,6 +9,10 @@ import {
 // Values
 pub fn build_effective_task(@domain.RepoRules, @domain.TaskTemplate, @domain.CurrentTask) -> @domain.EffectiveTask raise
 
+pub fn check_file_types(Array[String], Array[String], Array[String]) -> FileTypeResult
+
+pub fn check_risk_paths(Array[String], Array[String], Array[String]) -> RiskPathResult
+
 pub fn check_scope(@domain.EffectiveTask, Array[String]) -> ScopeCheckResult
 
 pub fn evaluate_gate(@domain.EffectiveTask, String, Array[String], String) -> @domain.CheckResult
@@ -24,6 +28,16 @@ pub fn validate_template_semantics(String, @domain.TaskTemplate) -> Result[Unit,
 // Errors
 
 // Types and methods
+pub(all) struct FileTypeResult {
+  forbidden_extension_files : Array[String]
+  sensitive_files : Array[String]
+} derive(@debug.Debug)
+
+pub(all) struct RiskPathResult {
+  protected_files : Array[String]
+  approval_files : Array[String]
+} derive(@debug.Debug)
+
 pub(all) struct ScopeCheckResult {
   out_of_scope_files : Array[String]
   target_paths_hit : Array[String]
