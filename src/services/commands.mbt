@@ -499,6 +499,116 @@ fn copy_text_file_if_exists(source : String, target : String) -> Bool raise {
 }
 
 ///|
+/// 返回内置最小验收包需要附带的固定文件清单。
+fn built_in_acceptance_pack_files() -> Array[(String, String)] {
+  [
+    ("docs/acceptance/matrix.md", "acceptance/matrix.md"),
+    ("examples/acceptance/current.yml", "acceptance/current.yml"),
+    (
+      "examples/acceptance/react-homepage-fixture/src/components/WorkLinks.jsx",
+      "acceptance/react-homepage-fixture/src/components/WorkLinks.jsx",
+    ),
+    (
+      "examples/acceptance/react-homepage-fixture/src/core/request.js",
+      "acceptance/react-homepage-fixture/src/core/request.js",
+    ),
+    (
+      "examples/acceptance/react-homepage-fixture/src/data/siteContent.js",
+      "acceptance/react-homepage-fixture/src/data/siteContent.js",
+    ),
+    (
+      "examples/acceptance/cases/pass/patch.diff",
+      "acceptance/cases/pass/patch.diff",
+    ),
+    (
+      "examples/acceptance/cases/pass/preview-report.json",
+      "acceptance/cases/pass/preview-report.json",
+    ),
+    (
+      "examples/acceptance/cases/pass/expected/checked-files.txt",
+      "acceptance/cases/pass/expected/checked-files.txt",
+    ),
+    (
+      "examples/acceptance/cases/pass/expected/gate-result.json",
+      "acceptance/cases/pass/expected/gate-result.json",
+    ),
+    (
+      "examples/acceptance/cases/pass/expected/gate-report.md",
+      "acceptance/cases/pass/expected/gate-report.md",
+    ),
+    (
+      "examples/acceptance/cases/retry/patch.diff",
+      "acceptance/cases/retry/patch.diff",
+    ),
+    (
+      "examples/acceptance/cases/retry/expected/checked-files.txt",
+      "acceptance/cases/retry/expected/checked-files.txt",
+    ),
+    (
+      "examples/acceptance/cases/retry/expected/gate-result.json",
+      "acceptance/cases/retry/expected/gate-result.json",
+    ),
+    (
+      "examples/acceptance/cases/retry/expected/gate-report.md",
+      "acceptance/cases/retry/expected/gate-report.md",
+    ),
+    (
+      "examples/acceptance/cases/reject/patch.diff",
+      "acceptance/cases/reject/patch.diff",
+    ),
+    (
+      "examples/acceptance/cases/reject/preview-report.json",
+      "acceptance/cases/reject/preview-report.json",
+    ),
+    (
+      "examples/acceptance/cases/reject/expected/checked-files.txt",
+      "acceptance/cases/reject/expected/checked-files.txt",
+    ),
+    (
+      "examples/acceptance/cases/reject/expected/gate-result.json",
+      "acceptance/cases/reject/expected/gate-result.json",
+    ),
+    (
+      "examples/acceptance/cases/reject/expected/gate-report.md",
+      "acceptance/cases/reject/expected/gate-report.md",
+    ),
+  ]
+}
+
+///|
+/// 将 acceptance 固定配置渲染为可直接查看的 `.moonforge` 文件并写入验收包。
+fn export_built_in_acceptance_configs(pack_dir : String) -> Array[String] raise {
+  let config = load_acceptance_config()
+  let exported : Array[String] = []
+
+  let repo_rules_target = @infra.join_path(
+    pack_dir,
+    "acceptance/.moonforge/repo-rules.yml",
+  )
+  @infra.write_text(repo_rules_target, render_acceptance_repo_rules(config))
+  exported.push("acceptance/.moonforge/repo-rules.yml")
+
+  let template_target = @infra.join_path(
+    pack_dir,
+    "acceptance/.moonforge/task-types/\{config.task_type}.yml",
+  )
+  @infra.write_text(template_target, render_acceptance_template(config))
+  exported.push("acceptance/.moonforge/task-types/\{config.task_type}.yml")
+
+  let current_task_target = @infra.join_path(
+    pack_dir,
+    "acceptance/.moonforge/current-task.yml",
+  )
+  @infra.write_text(
+    current_task_target,
+    render_current_task_yaml(config.task_type, config.title, config.target_paths),
+  )
+  exported.push("acceptance/.moonforge/current-task.yml")
+
+  exported
+}
+
+///|
 /// 生成给开发者阅读的 Markdown 门禁报告。
 fn render_report_markdown(result : @domain.CheckResult) -> String {
   let lines : Array[String] = [
@@ -962,7 +1072,7 @@ pub fn doctor_repo(repo_root : String) -> String raise {
 }
 
 ///|
-/// 导出最近一次检查的最小验收包，复制固定输入与固定输出文件到标准目录。
+/// 导出最近一次检查结果与内置 acceptance 夹具组成的最小验收包。
 pub fn pack_latest(
   repo_root : String,
   mode? : String = "local",
@@ -1004,6 +1114,17 @@ pub fn pack_latest(
       ) {
       copied_files.push(name)
     }
+  }
+
+  for item in built_in_acceptance_pack_files() {
+    let (source, target) = item
+    if copy_text_file_if_exists(source, @infra.join_path(pack_dir, target)) {
+      copied_files.push(target)
+    }
+  }
+
+  for target in export_built_in_acceptance_configs(pack_dir) {
+    copied_files.push(target)
   }
 
   if copied_files.is_empty() {

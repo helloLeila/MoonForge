@@ -9,7 +9,7 @@ fn unique_pack_repo(label : String) -> String {
 }
 
 ///|
-/// pack_latest 应导出最近一次检查的固定文件集合。
+/// pack_latest 应同时导出最近一次检查结果与固定 acceptance 夹具。
 test "pack command exports latest acceptance files" {
   let repo = unique_pack_repo("flow")
   let run_dir = @infra.join_path(repo, "fixture-runs/pack")
@@ -56,6 +56,62 @@ test "pack command exports latest acceptance files" {
   assert_true(
     @infra.path_exists(
       @infra.join_path(repo, ".moonforge/out/local/packs/latest/events.jsonl"),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/acceptance/current.yml",
+      ),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/acceptance/matrix.md",
+      ),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/acceptance/.moonforge/repo-rules.yml",
+      ),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/acceptance/.moonforge/current-task.yml",
+      ),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/acceptance/cases/pass/patch.diff",
+      ),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/acceptance/cases/retry/expected/gate-result.json",
+      ),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/acceptance/cases/reject/expected/gate-report.md",
+      ),
     ),
   )
 }

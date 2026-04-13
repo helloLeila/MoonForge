@@ -96,7 +96,7 @@ fn cli() -> @argparse.Command {
       ),
       @argparse.Command(
         "pack",
-        about="Export the latest minimal acceptance package",
+        about="Export the latest run outputs plus the built-in acceptance package",
         options=[
           @argparse.OptionArg("repo", about="Target repo root", required=true),
           @argparse.OptionArg("mode", about="Execution mode: local or ci", default_values=[
