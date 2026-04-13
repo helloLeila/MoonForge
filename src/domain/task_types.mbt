@@ -7,6 +7,7 @@
 pub(all) struct CurrentTask {
   task_type : String
   title : String
+  target_groups : Array[String]
   target_paths : Array[String]
 } derive(Debug, ToJson)
 

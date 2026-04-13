@@ -91,6 +91,7 @@ fn load_current_task(repo_root : String) -> @domain.CurrentTask raise {
   @domain.CurrentTask::{
     task_type: scalar_required(yaml, "task_type"),
     title: scalar_required(yaml, "title"),
+    target_groups: yaml.get_list("target_groups"),
     target_paths: yaml.get_list("target_paths"),
   }
 }
@@ -143,6 +144,7 @@ fn render_current_task(task : @domain.CurrentTask) -> String {
   [
     "task_type: \{task.task_type}",
     "title: \"\{task.title}\"",
+    render_list_block("target_groups", task.target_groups),
     render_list_block("target_paths", task.target_paths),
   ].join("\n\n") +
   "\n"
@@ -412,6 +414,7 @@ pub fn init_repo(repo_root : String) -> String raise {
     render_current_task(@domain.CurrentTask::{
       task_type: "feature-change",
       title: "replace-me",
+      target_groups: [],
       target_paths: ["frontend/src/pages/**"],
     }),
   )
@@ -448,7 +451,12 @@ pub fn create_task(
     }
   }
 
-  let task = @domain.CurrentTask::{ task_type, title, target_paths }
+  let task = @domain.CurrentTask::{
+    task_type,
+    title,
+    target_groups: [],
+    target_paths,
+  }
   @infra.write_text(current_task_path(repo_root), render_current_task(task))
   task
 }

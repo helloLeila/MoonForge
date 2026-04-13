@@ -24,7 +24,10 @@ test "decision view exposes retryable branch in bilingual fields" {
   assert_eq(decision.action_zh, "补齐材料后重新执行检查")
   assert_eq(@domain.Retryable.label(), "Retryable")
   assert_eq(@domain.Retryable.summary(), "补齐后重试")
-  assert_eq(@domain.Retryable.next_action(), "补齐材料后重新执行检查")
+  assert_eq(
+    @domain.Retryable.next_action(),
+    "补齐材料后重新执行检查",
+  )
 }
 
 ///|
@@ -34,10 +37,16 @@ test "decision view exposes reject branch in bilingual fields" {
   assert_eq(decision.code, "Reject")
   assert_eq(decision.text_zh, "拒绝放行")
   assert_eq(decision.text_en, "reject")
-  assert_eq(decision.action_zh, "撤回越界修改或缩小变更范围后重新提交")
+  assert_eq(
+    decision.action_zh,
+    "撤回越界修改或缩小变更范围后重新提交",
+  )
   assert_eq(@domain.Reject.label(), "Reject")
   assert_eq(@domain.Reject.summary(), "拒绝放行")
-  assert_eq(@domain.Reject.next_action(), "撤回越界修改或缩小变更范围后重新提交")
+  assert_eq(
+    @domain.Reject.next_action(),
+    "撤回越界修改或缩小变更范围后重新提交",
+  )
 }
 
 ///|

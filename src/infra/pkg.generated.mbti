@@ -32,6 +32,8 @@ pub fn read_text_if_exists(String) -> String? raise
 
 pub fn split_path(String) -> Array[String]
 
+pub fn template_yaml_file_name(String) -> String
+
 pub fn unique_strings(Array[String]) -> Array[String]
 
 pub fn write_text(String, String) -> Unit raise

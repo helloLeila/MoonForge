@@ -1,6 +1,10 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "leila/moonforge_gate/src/domain"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 
 // Errors
@@ -10,7 +14,7 @@ pub(all) struct ArtifactResultFile {
   required_artifacts : Array[String]
   provided_artifacts : Array[String]
   missing_artifacts : Array[String]
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
 
 pub(all) struct CheckResult {
   run_id : String
@@ -26,23 +30,32 @@ pub(all) struct CheckResult {
   effective_task : EffectiveTask
   changed_file_count : Int
   changed_file_count_exceeded : Bool
-} derive(Show)
+} derive(@debug.Debug)
 
 pub(all) struct CurrentTask {
   task_type : String
   title : String
+  target_groups : Array[String]
   target_paths : Array[String]
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
 
 pub(all) enum Decision {
   Accept
   Retryable
   Reject
   NeedHumanApproval
-} derive(Eq, Show)
+} derive(Eq, @debug.Debug)
 pub fn Decision::label(Self) -> String
 pub fn Decision::next_action(Self) -> String
 pub fn Decision::summary(Self) -> String
+
+pub(all) struct DecisionView {
+  code : String
+  text_zh : String
+  text_en : String
+  action_zh : String
+} derive(@debug.Debug)
+pub fn DecisionView::from_decision(Decision) -> Self
 
 pub(all) struct EffectiveTask {
   task_type : String
@@ -53,13 +66,13 @@ pub(all) struct EffectiveTask {
   allowed_extensions : Array[String]
   required_artifacts : Array[String]
   max_changed_files : Int
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
 
 pub(all) struct EventEntry {
   time_ns : UInt64
   event : String
   detail : String
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
 
 pub(all) struct GateResultFile {
   run_id : String
@@ -67,13 +80,13 @@ pub(all) struct GateResultFile {
   decision_summary : String
   violations : Array[Violation]
   next_action : String
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
 
 pub(all) struct RepoRules {
   protected_paths : Array[String]
   approval_required_paths : Array[String]
   default_allowed_extensions : Array[String]
-} derive(Show)
+} derive(@debug.Debug)
 
 pub(all) struct ScopeResultFile {
   checked_files : Array[String]
@@ -83,7 +96,7 @@ pub(all) struct ScopeResultFile {
   forbidden_extension_files : Array[String]
   changed_file_count : Int
   max_changed_files : Int
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
 
 pub(all) struct TaskTemplate {
   task_type : String
@@ -93,14 +106,22 @@ pub(all) struct TaskTemplate {
   required_artifacts : Array[String]
   max_changed_files : Int
   manual_approval_paths : Array[String]
-} derive(Show)
+} derive(@debug.Debug)
 
 pub(all) struct Violation {
   code : String
   file : String?
   detail : String
   suggestion : String
-} derive(Show, ToJson)
+} derive(ToJson, @debug.Debug)
+
+pub(all) struct ViolationView {
+  code : String
+  text_zh : String
+  text_en : String
+  action_zh : String
+} derive(@debug.Debug)
+pub fn ViolationView::from_violation(Violation) -> Self
 
 // Type aliases
 
