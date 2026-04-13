@@ -19,6 +19,11 @@ test "effective task merge expands target groups into allowed paths" {
   let repo_rules = @domain.RepoRules::{
     protected_paths: ["infra/**"],
     approval_required_paths: ["backend/src/main/java/**/service/high-risk/**"],
+    blocked_extensions: [],
+    generated_artifact_paths: [],
+    blocked_file_names: [],
+    blocked_file_patterns: [],
+    content_blocklist_patterns: [],
     default_allowed_extensions: [".ts", ".tsx", ".md"],
     max_changed_files: None,
     path_groups: {
@@ -33,6 +38,7 @@ test "effective task merge expands target groups into allowed paths" {
     forbidden_paths: [],
     allowed_extensions: [".ts", ".tsx", ".md"],
     required_artifacts: ["test-report.json"],
+    required_commands: [],
     max_changed_files: 8,
     manual_approval_paths: [],
   }
@@ -57,6 +63,11 @@ test "effective task merge rejects explicit targets outside template scope" {
   let repo_rules = @domain.RepoRules::{
     protected_paths: ["infra/**"],
     approval_required_paths: [],
+    blocked_extensions: [],
+    generated_artifact_paths: [],
+    blocked_file_names: [],
+    blocked_file_patterns: [],
+    content_blocklist_patterns: [],
     default_allowed_extensions: [".ts", ".tsx", ".md"],
     max_changed_files: None,
     path_groups: {
@@ -71,6 +82,7 @@ test "effective task merge rejects explicit targets outside template scope" {
     forbidden_paths: [],
     allowed_extensions: [".ts", ".tsx", ".md"],
     required_artifacts: ["test-report.json"],
+    required_commands: [],
     max_changed_files: 8,
     manual_approval_paths: [],
   }
@@ -95,6 +107,11 @@ test "effective task merge keeps stricter max file count" {
   let repo_rules = @domain.RepoRules::{
     protected_paths: ["infra/**"],
     approval_required_paths: [],
+    blocked_extensions: [],
+    generated_artifact_paths: [],
+    blocked_file_names: [],
+    blocked_file_patterns: [],
+    content_blocklist_patterns: [],
     default_allowed_extensions: [".ts", ".tsx", ".md"],
     max_changed_files: Some(3),
     path_groups: { "frontend_user_pages": ["frontend/src/pages/UserList/**"] },
@@ -105,6 +122,7 @@ test "effective task merge keeps stricter max file count" {
     forbidden_paths: [],
     allowed_extensions: [".ts", ".tsx", ".md"],
     required_artifacts: ["test-report.json"],
+    required_commands: [],
     max_changed_files: 8,
     manual_approval_paths: [],
   }
