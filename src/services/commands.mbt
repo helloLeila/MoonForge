@@ -562,7 +562,13 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
           ],
         ) {
           Err(field) => errors.push("仓库规则文件缺少字段：\{field}")
-          Ok(_) => ()
+          Ok(_) => {
+            try {
+              ignore(load_repo_rules(repo_root))
+            } catch {
+              err => errors.push("仓库规则文件非法：\{err.to_string()}")
+            }
+          }
         }
     }
   }

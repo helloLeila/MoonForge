@@ -65,6 +65,35 @@ test "validate fails when repo rules missing required field" {
 }
 
 ///|
+/// validate_repo 应在仓库规则 YAML 语法非法时返回错误，而不是放过。
+test "validate fails when repo rules yaml invalid" {
+  let repo = unique_validate_dir("repo-rules-yaml")
+  let invalid_rules =
+    #|protected_paths:
+    #|  - "infra/**"
+    #|
+    #|approval_required_paths:
+    #|  - "backend/src/main/java/**/service/high-risk/**"
+    #|
+    #|default_allowed_extensions:
+    #|  - ".ts"
+    #|
+    #|path_groups.frontend_pages:
+    #|  - "frontend/src/pages/**"
+    #|oops
+    #|
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.create_task(
+      repo, "feature-change", "Add filter", "frontend/src/pages/**",
+    ),
+  )
+  @infra.write_text(@infra.join_path(repo, ".moonforge/repo-rules.yml"), invalid_rules)
+  let result = @services.validate_repo(repo)
+  assert_true(result is Err(_))
+}
+
+///|
 /// validate_repo 不应把 init 生成的空白任务样例当作合法任务。
 test "validate fails on blank task sample after init" {
   let repo = unique_validate_dir("blank")
