@@ -11,9 +11,11 @@ pub fn build_decision(has_scope_reject~ : Bool, has_protected_path~ : Bool, has_
 
 pub fn build_effective_task(@domain.RepoRules, @domain.TaskTemplate, @domain.CurrentTask) -> @domain.EffectiveTask raise
 
-pub fn check_artifacts(Array[String], Map[String, String]) -> ArtifactCheckResult
+pub fn check_artifacts(Array[String], Map[String, String], Map[String, Array[String]]) -> ArtifactCheckResult
 
-pub fn check_file_types(Array[String], Array[String], Array[String]) -> FileTypeResult
+pub fn check_file_types(Array[String], Array[String], Array[String], Array[String], Array[String], Array[String]) -> FileTypeResult
+
+pub fn check_required_commands(Array[String], String) -> CommandCheckResult raise
 
 pub fn check_risk_paths(Array[String], Array[String], Array[String]) -> RiskPathResult
 
@@ -21,13 +23,17 @@ pub fn check_scope(@domain.EffectiveTask, Array[String]) -> ScopeCheckResult
 
 pub fn collect_artifacts(String, Array[String]) -> Map[String, String] raise
 
-pub fn evaluate_gate(@domain.EffectiveTask, String, Array[String], String) -> @domain.CheckResult
+pub fn evaluate_gate(@domain.EffectiveTask, String, Map[String, String], Map[String, Array[String]], String, String) -> @domain.CheckResult raise
 
 pub fn extract_touched_files(String) -> Array[String]
+
+pub fn find_blocklisted_files(String, Array[String]) -> Array[String]
 
 pub fn pick_stricter_limit(Int, Int) -> Int
 
 pub fn validate_current_task(@domain.CurrentTask) -> Result[Unit, String]
+
+pub fn validate_json_artifact(String, Array[String]) -> Result[Unit, String]
 
 pub fn validate_markdown_artifact(String) -> Result[Unit, String]
 
@@ -41,9 +47,15 @@ pub(all) struct ArtifactCheckResult {
   invalid_artifacts : Array[String]
 } derive(@debug.Debug)
 
+pub(all) struct CommandCheckResult {
+  failed_commands : Array[String]
+} derive(@debug.Debug)
+
 pub(all) struct FileTypeResult {
   forbidden_extension_files : Array[String]
-  sensitive_files : Array[String]
+  blocked_file_name_files : Array[String]
+  blocked_file_pattern_files : Array[String]
+  generated_artifact_files : Array[String]
 } derive(@debug.Debug)
 
 pub(all) struct RiskPathResult {
