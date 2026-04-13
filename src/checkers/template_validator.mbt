@@ -13,11 +13,16 @@ pub fn validate_template_semantics(
   let overlapping_paths = template.allowed_paths.filter(path => {
     template.forbidden_paths.contains(path)
   })
+  let blank_required_commands = template.required_commands.filter(command => {
+    command.trim() == ""
+  })
   if file_name != @infra.template_yaml_file_name(template.task_type) {
     Err("CONFIG_SCHEMA_INVALID")
   } else if !overlapping_paths.is_empty() {
     Err("RULE_SEMANTIC_INVALID")
   } else if template.max_changed_files <= 0 {
+    Err("RULE_SEMANTIC_INVALID")
+  } else if !blank_required_commands.is_empty() {
     Err("RULE_SEMANTIC_INVALID")
   } else {
     Ok(())
