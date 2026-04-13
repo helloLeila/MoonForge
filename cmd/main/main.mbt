@@ -148,7 +148,7 @@ fn main {
     }
   } catch {
     err => {
-      println(err.to_string())
+      println(@services.render_cli_error(err.to_string()))
       panic()
     }
   }

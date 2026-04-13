@@ -702,3 +702,9 @@ pub fn dispatch_cli_command(
     _ => raise Failure::Failure("Unsupported subcommand: \{command_name}")
   }
 }
+
+///|
+/// 将 CLI 异常统一渲染为中英双语提示，便于终端直接阅读。
+pub fn render_cli_error(error_text : String) -> String {
+  "错误 / Error: \{error_text}"
+}

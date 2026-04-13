@@ -93,3 +93,11 @@ test "cli dispatches doctor command" {
   let output = @services.dispatch_cli_command("doctor", repo)
   assert_true(output.contains("配置健康"))
 }
+
+///|
+/// CLI 错误输出应同时包含中文与英文前缀。
+test "cli renders bilingual error message" {
+  let output = @services.render_cli_error("Missing required option --repo")
+  assert_true(output.contains("错误 / Error"))
+  assert_true(output.contains("Missing required option --repo"))
+}
