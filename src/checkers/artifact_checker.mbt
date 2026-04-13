@@ -10,19 +10,55 @@ pub(all) struct ArtifactCheckResult {
 } derive(Debug)
 
 ///|
+/// 校验 JSON 材料是否具备对象外形与必填字段。
+/// 入参：`text`，JSON 材料的原始文本。
+/// 入参：`required_fields`，当前材料必须具备的字段名列表。
+/// 出参：`Result[Unit, String]`，符合最小结构时返回 `Ok(())`，否则返回 `Err("ARTIFACT_INVALID")`。
+pub fn validate_json_artifact(
+  text : String,
+  required_fields : Array[String],
+) -> Result[Unit, String] {
+  let trimmed = text.trim().to_string()
+  if !trimmed.has_prefix("{") || !trimmed.has_suffix("}") {
+    return Err("ARTIFACT_INVALID")
+  }
+  for field in required_fields {
+    if !trimmed.contains("\"\{field}\"") {
+      return Err("ARTIFACT_INVALID")
+    }
+  }
+  Ok(())
+}
+
+///|
 /// 检查所有必需材料是否在提供的材料映射中存在。
 /// 入参：`required_artifacts`，模板要求必须提供的材料文件名列表。
 /// 入参：`provided_artifacts`，以文件名为键、文件内容为值的材料映射表。
+/// 入参：`artifact_required_fields`，按材料名给出的必填字段规则。
 /// 出参：`ArtifactCheckResult`，记录缺失和无效的材料文件列表。
 pub fn check_artifacts(
   required_artifacts : Array[String],
   provided_artifacts : Map[String, String],
+  artifact_required_fields : Map[String, Array[String]],
 ) -> ArtifactCheckResult {
   let missing_artifacts : Array[String] = []
   let invalid_artifacts : Array[String] = []
   for artifact in required_artifacts {
     if !provided_artifacts.contains(artifact) {
       missing_artifacts.push(artifact)
+      continue
+    }
+    let content = provided_artifacts.get_or_default(artifact, "")
+    let required_fields = artifact_required_fields.get_or_default(artifact, [])
+    let validation_result = if !required_fields.is_empty() {
+      validate_json_artifact(content, required_fields)
+    } else if artifact.has_suffix(".md") {
+      validate_markdown_artifact(content)
+    } else {
+      Ok(())
+    }
+    if validation_result is Err(_) {
+      invalid_artifacts.push(artifact)
     }
   }
   ArtifactCheckResult::{ missing_artifacts, invalid_artifacts }
