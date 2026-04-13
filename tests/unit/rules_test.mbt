@@ -69,7 +69,10 @@ test "flat yaml parser groups prefixed list fields" {
 /// 验证目录扫描能返回顶层文件与子目录名称。
 test "list dir returns top-level entries" {
   let dir = @infra.join_path("tmp", "moonforge-list-dir-test")
-  @infra.write_text(@infra.join_path(dir, "feature-change.yml"), "task_type: feature-change\n")
+  @infra.write_text(
+    @infra.join_path(dir, "feature-change.yml"),
+    "task_type: feature-change\n",
+  )
   @infra.write_text(@infra.join_path(dir, "nested/demo.txt"), "demo\n")
 
   let entries = @infra.list_dir(dir)
