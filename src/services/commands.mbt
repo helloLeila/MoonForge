@@ -564,7 +564,7 @@ pub fn create_task(
   paths_csv : String,
 ) -> @domain.CurrentTask raise {
   let repo_rules = load_repo_rules(repo_root)
-  match validate_task_type(task_type) {
+  match validate_task_type_in_repo(repo_root, task_type) {
     Ok(_) => ()
     Err(code) => raise Failure::Failure(code)
   }

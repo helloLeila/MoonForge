@@ -104,3 +104,44 @@ test "create task rejects unknown task type" {
     err => assert_true(err.to_string().contains("TASK_TYPE_UNKNOWN"))
   }
 }
+
+///|
+/// create_task 应支持仓库中新增的自定义任务模板类型。
+test "create task accepts custom task type from repo templates" {
+  let repo = unique_init_dir("custom-type")
+  let custom_template =
+    #|task_type: custom-review
+    #|
+    #|allowed_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+    #|forbidden_paths:
+    #|  - "infra/**"
+    #|
+    #|allowed_extensions:
+    #|  - ".ts"
+    #|  - ".tsx"
+    #|
+    #|required_artifacts:
+    #|  - "review.md"
+    #|
+    #|max_changed_files: 8
+    #|
+    #|manual_approval_paths:
+    #|  - "backend/src/main/java/**/service/high-risk/**"
+    #|
+  ignore(@services.init_repo(repo))
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/task-types/custom-review.yml"),
+    custom_template,
+  )
+  ignore(
+    @services.create_task(
+      repo, "custom-review", "Review list page", "@frontend_pages",
+    ),
+  )
+  let content = @infra.read_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+  )
+  assert_true(content.contains("custom-review"))
+}
