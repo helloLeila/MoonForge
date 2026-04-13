@@ -606,3 +606,33 @@ pub fn summarize_result(result : @domain.CheckResult) -> String {
 
   lines.join("\n")
 }
+
+///|
+/// 统一分发 CLI 子命令到服务层实现，保证入口逻辑集中且可测试。
+pub fn dispatch_cli_command(
+  command_name : String,
+  repo_root : String,
+  task_type? : String = "",
+  title? : String = "",
+  paths? : String = "",
+  run? : String = "",
+  mode? : String = "local",
+) -> String raise {
+  match command_name {
+    "init" => init_repo(repo_root)
+    "task" => {
+      let task = create_task(repo_root, task_type, title, paths)
+      "Wrote current-task.yml for \{task.task_type}: \{task.title}"
+    }
+    "check" => {
+      let result = run_check(repo_root, run, mode=mode)
+      summarize_result(result)
+    }
+    "report" => report_latest(repo_root, mode=mode)
+    "validate" => match validate_repo(repo_root) {
+      Ok(message) => message
+      Err(message) => raise Failure::Failure(message)
+    }
+    _ => raise Failure::Failure("Unsupported subcommand: \{command_name}")
+  }
+}

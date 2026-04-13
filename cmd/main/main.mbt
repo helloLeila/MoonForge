@@ -68,12 +68,17 @@ fn cli() -> @argparse.Command {
           ]),
         ],
       ),
+      @argparse.Command(
+        "validate",
+        about="Validate .moonforge config files in a target repo",
+        options=[
+          @argparse.OptionArg("repo", about="Target repo root", required=true),
+        ],
+      ),
     ],
   )
 }
 
-///|
-/// CLI 主函数，负责解析参数并分发到具体服务层命令。
 fn main {
   try {
     let matches = cli().parse()
@@ -83,31 +88,37 @@ fn main {
     }
 
     match name {
-      "init" => println(@services.init_repo(option_value(child, "repo")))
-      "task" => {
-        let task = @services.create_task(
-          option_value(child, "repo"),
-          option_value(child, "type"),
-          option_value(child, "title"),
-          option_value(child, "paths"),
+      "init" =>
+        println(@services.dispatch_cli_command(name, option_value(child, "repo")))
+      "task" =>
+        println(
+          @services.dispatch_cli_command(
+            name,
+            option_value(child, "repo"),
+            task_type=option_value(child, "type"),
+            title=option_value(child, "title"),
+            paths=option_value(child, "paths"),
+          ),
         )
-        println("Wrote current-task.yml for \{task.task_type}: \{task.title}")
-      }
-      "check" => {
-        let result = @services.run_check(
-          option_value(child, "repo"),
-          option_value(child, "run"),
-          mode=option_value(child, "mode"),
+      "check" =>
+        println(
+          @services.dispatch_cli_command(
+            name,
+            option_value(child, "repo"),
+            run=option_value(child, "run"),
+            mode=option_value(child, "mode"),
+          ),
         )
-        println(@services.summarize_result(result))
-      }
       "report" =>
         println(
-          @services.report_latest(
+          @services.dispatch_cli_command(
+            name,
             option_value(child, "repo"),
             mode=option_value(child, "mode"),
           ),
         )
+      "validate" =>
+        println(@services.dispatch_cli_command(name, option_value(child, "repo")))
       _ => raise Failure::Failure("Unsupported subcommand: \{name}")
     }
   } catch {
