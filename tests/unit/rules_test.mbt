@@ -66,6 +66,18 @@ test "flat yaml parser groups prefixed list fields" {
 }
 
 ///|
+/// 验证目录扫描能返回顶层文件与子目录名称。
+test "list dir returns top-level entries" {
+  let dir = @infra.join_path("tmp", "moonforge-list-dir-test")
+  @infra.write_text(@infra.join_path(dir, "feature-change.yml"), "task_type: feature-change\n")
+  @infra.write_text(@infra.join_path(dir, "nested/demo.txt"), "demo\n")
+
+  let entries = @infra.list_dir(dir)
+  assert_true(entries.contains("feature-change.yml"))
+  assert_true(entries.contains("nested"))
+}
+
+///|
 /// 验证 diff 解析器能从标准 git patch 中提取被修改文件。
 test "diff extractor collects touched git files" {
   let diff =

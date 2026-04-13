@@ -110,6 +110,33 @@ pub fn read_text_if_exists(path : String) -> String? raise {
 }
 
 ///|
+/// 读取目录下的一级条目名称，忽略 `.` 与 `..`。
+pub fn list_dir(path : String) -> Array[String] raise {
+  let target = normalize_path(path)
+  with_loop((uv : @uv.Loop) => {
+    let scandir = uv.fs_scandir_sync(@utf8.encode(target), 0)
+    let entries : Array[String] = []
+
+    fn read_entries(scandir : @uv.Scandir, entries : Array[String]) -> Unit raise {
+      try {
+        let entry = scandir.next()
+        let name = @utf8.decode_lossy(entry.name())
+        if name != "." && name != ".." {
+          entries.push(name)
+        }
+        read_entries(scandir, entries)
+      } catch {
+        Errno::EOF => ()
+        err => raise err
+      }
+    }
+
+    read_entries(scandir, entries)
+    entries
+  })
+}
+
+///|
 /// 以 UTF-8 文本方式覆盖写入一个文件。
 pub fn write_text(path : String, content : String) -> Unit raise {
   let target = normalize_path(path)
