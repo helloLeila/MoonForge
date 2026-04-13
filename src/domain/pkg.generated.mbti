@@ -96,6 +96,17 @@ pub(all) struct GateResultFile {
   next_action : String
 } derive(ToJson, @debug.Debug)
 
+pub(all) struct PackManifestFile {
+  mode : String
+  run_id : String
+  decision : String
+  context_summary : String
+  exported_files : Array[String]
+  input_file_count : Int
+  result_file_count : Int
+  acceptance_file_count : Int
+} derive(ToJson, @debug.Debug)
+
 pub(all) struct RepoRules {
   protected_paths : Array[String]
   approval_required_paths : Array[String]
@@ -108,6 +119,17 @@ pub(all) struct RepoRules {
   path_groups : Map[String, Array[String]]
   max_changed_files : Int?
 } derive(@debug.Debug)
+
+pub(all) struct RunContextFile {
+  mode : String
+  source_kind : String
+  environment : String
+  event_name : String?
+  base_ref : String?
+  head_ref : String?
+  pr_number : String?
+  diff_path : String
+} derive(ToJson, @debug.Debug)
 
 pub(all) struct ScopeResultFile {
   checked_files : Array[String]
