@@ -12,6 +12,7 @@ fn unique_init_dir(label : String) -> String {
 
 ///|
 /// init_repo 应在指定目录创建仓库规则文件和五类任务模板文件。
+/// `init_repo` should create rule files, task templates, and the pre-commit hook scaffold.
 test "init creates repo rules and five templates" {
   let repo = unique_init_dir("init")
   ignore(@services.init_repo(repo))
@@ -49,6 +50,11 @@ test "init creates repo rules and five templates" {
   assert_true(current_task.contains("task_type: \"\""))
   assert_true(current_task.contains("target_groups"))
   assert_true(current_task.contains("target_paths"))
+  let hook_text = @infra.read_text(
+    @infra.join_path(repo, ".git/hooks/pre-commit"),
+  )
+  assert_true(hook_text.contains("moonforge check"))
+  assert_true(hook_text.contains(".moonforge/current-task.yml"))
 }
 
 ///|

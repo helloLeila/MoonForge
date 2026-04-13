@@ -9,7 +9,7 @@ fn unique_pack_repo(label : String) -> String {
 }
 
 ///|
-/// pack_latest 应同时导出最近一次检查结果与固定 acceptance 夹具。
+/// pack_latest 应同时导出最近一次检查结果、固定 acceptance 夹具和打包清单。
 test "pack command exports latest acceptance files" {
   let repo = unique_pack_repo("flow")
   let run_dir = @infra.join_path(repo, "fixture-runs/pack")
@@ -111,6 +111,14 @@ test "pack command exports latest acceptance files" {
       @infra.join_path(
         repo,
         ".moonforge/out/local/packs/latest/acceptance/cases/reject/expected/gate-report.md",
+      ),
+    ),
+  )
+  assert_true(
+    @infra.path_exists(
+      @infra.join_path(
+        repo,
+        ".moonforge/out/local/packs/latest/pack-manifest.json",
       ),
     ),
   )

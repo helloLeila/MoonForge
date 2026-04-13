@@ -9,7 +9,7 @@ fn unique_pack_repo(label : String) -> String {
 }
 
 ///|
-/// pack_latest 应导出固定输入与固定输出文件。
+/// pack_latest 应导出固定输入、固定输出和可供验收引用的清单文件。
 test "pack latest exports fixed input and output files" {
   let repo = unique_pack_repo("latest")
   let run_dir = @infra.join_path(repo, "fixture-runs/pack")
@@ -141,4 +141,12 @@ test "pack latest exports fixed input and output files" {
       ),
     ),
   )
+  let manifest = @infra.read_text(
+    @infra.join_path(
+      repo, ".moonforge/out/local/packs/latest/pack-manifest.json",
+    ),
+  )
+  assert_true(manifest.contains("\"mode\": \"local\""))
+  assert_true(manifest.contains("\"gate-result.json\""))
+  assert_true(manifest.contains("\"run-context.json\""))
 }
