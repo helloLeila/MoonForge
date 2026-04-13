@@ -2,5 +2,6 @@ import {
   "leila/moonforge_gate/src/domain",
   "leila/moonforge_gate/src/infra",
   "leila/moonforge_gate/src/services",
+  "moonbitlang/core/env",
   "tonyfettes/uv",
 }

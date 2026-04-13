@@ -522,7 +522,14 @@ pub fn run_check(
   let effective_task = @checkers.build_effective_task(
     repo_rules, template, current_task,
   )
-  let diff_text = @infra.read_text(@infra.join_path(run_dir, "patch.diff"))
+  let diff_text = if actual_mode == "ci" {
+    @adapters.read_ci_diff(
+      @adapters.current_env(),
+      @infra.join_path(run_dir, "patch.diff"),
+    )
+  } else {
+    @adapters.read_local_diff(run_dir)
+  }
   let provided_artifacts = collect_present_artifacts(run_dir, effective_task)
   let run_id = @adapters.run_id_from_run_dir(run_dir)
   let result = @checkers.evaluate_gate(

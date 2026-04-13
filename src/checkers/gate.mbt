@@ -19,22 +19,7 @@ fn push_violation(
 ///|
 /// 从标准 git diff 文本中提取本次真正触碰的文件列表。
 pub fn extract_touched_files(diff_text : String) -> Array[String] {
-  let touched : Array[String] = []
-  for
-    line in diff_text.split("\n").map(item => item.trim().to_string()).collect() {
-    if line.has_prefix("diff --git a/") {
-      let tokens = line.split(" ").map(token => token.to_string()).collect()
-      if tokens.length() >= 4 {
-        let left = tokens[2]
-        if left.has_prefix("a/") {
-          touched.push(left[2:left.length()].to_string())
-        } else {
-          touched.push(left)
-        }
-      }
-    }
-  }
-  @infra.unique_strings(touched)
+  @infra.parse_changed_files(diff_text)
 }
 
 ///|

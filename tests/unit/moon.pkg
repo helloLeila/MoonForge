@@ -1,4 +1,5 @@
 import {
+  "leila/moonforge_gate/src/adapters",
   "leila/moonforge_gate/src/domain",
   "leila/moonforge_gate/src/checkers",
   "leila/moonforge_gate/src/infra",

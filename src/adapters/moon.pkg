@@ -1,3 +1,4 @@
 import {
+  "moonbitlang/core/env",
   "leila/moonforge_gate/src/infra",
 }

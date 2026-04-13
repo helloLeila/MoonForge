@@ -232,6 +232,30 @@ test "repo rules path groups and stricter max file count affect run check" {
 }
 
 ///|
+/// 验证 CI 模式会通过 GitHub 环境与 CI 适配器读取补丁输入。
+test "ci mode reads diff through ci adapter" {
+  let repo_root = unique_repo_root("ci")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/ci")
+  try {
+    seed_repo(repo_root)
+    feature_task(repo_root, "frontend/src/pages/**,frontend/src/components/**")
+    seed_run(run_dir, pass_diff())
+
+    @env.set_env_var("GITHUB_ACTIONS", "true")
+    let result = @services.run_check(repo_root, run_dir, mode="ci")
+    @env.unset_env_var("GITHUB_ACTIONS")
+
+    assert_true(result.decision == @domain.Accept)
+  } catch {
+    err => {
+      @env.unset_env_var("GITHUB_ACTIONS")
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
 /// 验证触碰安全目录时，会命中受保护路径拒绝规则。
 test "touching protected path becomes reject" {
   let repo_root = unique_repo_root("reject")
