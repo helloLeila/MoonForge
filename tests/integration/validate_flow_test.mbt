@@ -17,10 +17,7 @@ test "validate passes after init" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Add filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Add filter", "frontend/src/pages/**",
     ),
   )
   let result = @services.validate_repo(repo)
@@ -41,10 +38,7 @@ test "validate fails on blank task sample after init" {
 test "validate fails when current task missing" {
   let repo = unique_validate_dir("missing")
   ignore(@services.init_repo(repo))
-  @infra.write_text(
-    @infra.join_path(repo, ".moonforge/current-task.yml"),
-    "",
-  )
+  @infra.write_text(@infra.join_path(repo, ".moonforge/current-task.yml"), "")
   let result = @services.validate_repo(repo)
   assert_true(result is Err(_))
 }
@@ -76,10 +70,7 @@ test "validate fails when active template semantics invalid" {
   ignore(@services.init_repo(repo))
   ignore(
     @services.create_task(
-      repo,
-      "feature-change",
-      "Add filter",
-      "frontend/src/pages/**",
+      repo, "feature-change", "Add filter", "frontend/src/pages/**",
     ),
   )
   @infra.write_text(

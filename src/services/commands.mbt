@@ -299,9 +299,7 @@ fn split_paths_csv(paths_csv : String) -> Array[String] {
 
 ///|
 /// 把 `@group_name` 形式的快捷选择从显式路径里拆出，供 task 命令同时支持路径组与具体路径。
-fn split_task_targets(
-  paths_csv : String,
-) -> (Array[String], Array[String]) {
+fn split_task_targets(paths_csv : String) -> (Array[String], Array[String]) {
   let target_groups : Array[String] = []
   let target_paths : Array[String] = []
   for target in split_paths_csv(paths_csv) {
@@ -490,10 +488,7 @@ pub fn init_repo(repo_root : String) -> String raise {
       render_task_template(seed.template),
     )
   }
-  @infra.write_text(
-    current_task_path(repo_root),
-    blank_current_task_template(),
-  )
+  @infra.write_text(current_task_path(repo_root), blank_current_task_template())
   "Initialized MoonForge Gate config in \{moonforge_dir}"
 }
 
@@ -512,14 +507,17 @@ pub fn create_task(
     raise Failure::Failure("Task title cannot be empty")
   }
   if target_groups.is_empty() && target_paths.is_empty() {
-    raise Failure::Failure("At least one target path or target group is required")
+    raise Failure::Failure(
+      "At least one target path or target group is required",
+    )
   }
 
   let expanded_target_groups = @infra.expand_target_groups(
     repo_rules.path_groups,
     target_groups,
   )
-  for target_path in @infra.unique_strings(expanded_target_groups + target_paths) {
+  for
+    target_path in @infra.unique_strings(expanded_target_groups + target_paths) {
     if !@infra.matches_any(target_path, template.allowed_paths) {
       raise Failure::Failure(
         "Target path \{target_path} is outside template allowed paths for \{task_type}",
@@ -673,15 +671,11 @@ pub fn doctor_repo(repo_root : String) -> String raise {
     for issue in diagnose_empty_files([(repo_rules_file, repo_rules_text)]) {
       issues.push(issue)
     }
-    for issue in diagnose_required_fields(
-      repo_rules_text,
-      [
-        "protected_paths",
-        "approval_required_paths",
-        "default_allowed_extensions",
+    for
+      issue in diagnose_required_fields(repo_rules_text, [
+        "protected_paths", "approval_required_paths", "default_allowed_extensions",
         "path_groups",
-      ],
-    ) {
+      ]) {
       issues.push(issue)
     }
     for issue in diagnose_yaml_syntax(repo_rules_text) {
@@ -694,10 +688,10 @@ pub fn doctor_repo(repo_root : String) -> String raise {
     for issue in diagnose_empty_files([(current_task_file, current_task_text)]) {
       issues.push(issue)
     }
-    for issue in diagnose_required_fields(
-      current_task_text,
-      ["task_type", "title", "target_paths"],
-    ) {
+    for
+      issue in diagnose_required_fields(current_task_text, [
+        "task_type", "title", "target_paths",
+      ]) {
       issues.push(issue)
     }
     for issue in diagnose_yaml_syntax(current_task_text) {
@@ -720,12 +714,18 @@ pub fn pack_latest(
     return render_pack_failure("未找到最近一次检查结果")
   }
 
-  let pack_dir = @infra.join_path(repo_root, ".moonforge/out/\{actual_mode}/packs/latest")
+  let pack_dir = @infra.join_path(
+    repo_root,
+    ".moonforge/out/\{actual_mode}/packs/latest",
+  )
   let copied_files : Array[String] = []
 
   let fixed_inputs = [
     (repo_rules_path(repo_root), @infra.join_path(pack_dir, "repo-rules.yml")),
-    (current_task_path(repo_root), @infra.join_path(pack_dir, "current-task.yml")),
+    (
+      current_task_path(repo_root),
+      @infra.join_path(pack_dir, "current-task.yml"),
+    ),
   ]
   for item in fixed_inputs {
     let (source, target) = item
@@ -735,12 +735,8 @@ pub fn pack_latest(
   }
 
   let fixed_outputs = collect_pack_files([
-    "gate-result.json",
-    "gate-report.md",
-    "scope-result.json",
-    "artifact-result.json",
-    "checked-files.txt",
-    "events.jsonl",
+    "gate-result.json", "gate-report.md", "scope-result.json", "artifact-result.json",
+    "checked-files.txt", "events.jsonl",
   ])
   for name in fixed_outputs {
     if copy_text_file_if_exists(
@@ -802,17 +798,18 @@ pub fn dispatch_cli_command(
       "Wrote current-task.yml for \{task.task_type}: \{task.title}"
     }
     "check" => {
-      let result = run_check(repo_root, run, mode=mode)
+      let result = run_check(repo_root, run, mode~)
       summarize_result(result)
     }
-    "report" => report_summary(repo_root, mode=mode)
-    "validate" => match validate_repo(repo_root) {
-      Ok(message) => message
-      Err(message) => raise Failure::Failure(message)
-    }
+    "report" => report_summary(repo_root, mode~)
+    "validate" =>
+      match validate_repo(repo_root) {
+        Ok(message) => message
+        Err(message) => raise Failure::Failure(message)
+      }
     "replay" => replay_check(repo_root, run_id)
     "doctor" => doctor_repo(repo_root)
-    "pack" => pack_latest(repo_root, mode=mode)
+    "pack" => pack_latest(repo_root, mode~)
     _ => raise Failure::Failure("Unsupported subcommand: \{command_name}")
   }
 }
