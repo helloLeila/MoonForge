@@ -583,6 +583,19 @@ pub fn report_latest(
 }
 
 ///|
+/// 读取指定运行编号的任务快照，并返回 replay 命令摘要。
+pub fn replay_check(repo_root : String, run_id : String) -> String raise {
+  if !snapshot_exists(repo_root, run_id) {
+    return render_snapshot_not_found(run_id)
+  }
+  match read_task_snapshot(repo_root, run_id) {
+    Some(snapshot_text) =>
+      render_replay_summary(run_id, extract_task_type(snapshot_text))
+    None => render_snapshot_not_found(run_id)
+  }
+}
+
+///|
 /// 将检查结果压缩为终端展示用的摘要文本。
 pub fn summarize_result(result : @domain.CheckResult) -> String {
   let lines : Array[String] = [
@@ -616,6 +629,7 @@ pub fn dispatch_cli_command(
   title? : String = "",
   paths? : String = "",
   run? : String = "",
+  run_id? : String = "",
   mode? : String = "local",
 ) -> String raise {
   match command_name {
@@ -633,6 +647,7 @@ pub fn dispatch_cli_command(
       Ok(message) => message
       Err(message) => raise Failure::Failure(message)
     }
+    "replay" => replay_check(repo_root, run_id)
     _ => raise Failure::Failure("Unsupported subcommand: \{command_name}")
   }
 }

@@ -75,6 +75,14 @@ fn cli() -> @argparse.Command {
           @argparse.OptionArg("repo", about="Target repo root", required=true),
         ],
       ),
+      @argparse.Command(
+        "replay",
+        about="Replay a historical gate run from snapshot files",
+        options=[
+          @argparse.OptionArg("repo", about="Target repo root", required=true),
+          @argparse.OptionArg("run-id", about="Historical run id", required=true),
+        ],
+      ),
     ],
   )
 }
@@ -119,6 +127,14 @@ fn main {
         )
       "validate" =>
         println(@services.dispatch_cli_command(name, option_value(child, "repo")))
+      "replay" =>
+        println(
+          @services.dispatch_cli_command(
+            name,
+            option_value(child, "repo"),
+            run_id=option_value(child, "run-id"),
+          ),
+        )
       _ => raise Failure::Failure("Unsupported subcommand: \{name}")
     }
   } catch {

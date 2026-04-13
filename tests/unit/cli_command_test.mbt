@@ -25,3 +25,53 @@ test "cli dispatches validate command" {
   let output = @services.dispatch_cli_command("validate", repo)
   assert_true(output.contains("配置校验通过"))
 }
+
+///|
+/// replay 子命令应读取已有任务快照并返回重放摘要。
+test "cli dispatches replay command" {
+  let repo = unique_cli_repo("replay")
+  let run_dir = @infra.join_path(repo, "fixture-runs/replay")
+  let diff =
+    #|diff --git a/frontend/src/pages/UserList/index.tsx b/frontend/src/pages/UserList/index.tsx
+    #|index 1111111..2222222 100644
+    #|--- a/frontend/src/pages/UserList/index.tsx
+    #|+++ b/frontend/src/pages/UserList/index.tsx
+    #|@@ -1,1 +1,2 @@
+    #| export const userListPage = true
+    #|+export const filterEnabled = true
+    #|
+  @infra.write_text(
+    @infra.join_path(repo, "frontend/src/pages/UserList/index.tsx"),
+    "export const userListPage = true\n",
+  )
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.create_task(
+      repo,
+      "feature-change",
+      "Replay filter",
+      "frontend/src/pages/**",
+    ),
+  )
+  @infra.write_text(
+    @infra.join_path(run_dir, "patch.diff"),
+    diff,
+  )
+  @infra.write_text(
+    @infra.join_path(run_dir, "test-report.json"),
+    "{\n  \"passed\": true\n}\n",
+  )
+  @infra.write_text(
+    @infra.join_path(run_dir, "review-report.json"),
+    "{\n  \"status\": \"approved\"\n}\n",
+  )
+  let result = @services.run_check(repo, run_dir)
+
+  let output = @services.dispatch_cli_command(
+    "replay",
+    repo,
+    run_id=result.run_id,
+  )
+  assert_true(output.contains(result.run_id))
+  assert_true(output.contains("feature-change"))
+}

@@ -8,7 +8,7 @@
 /// 入参：`run_id`，需要重放的运行标识符。
 /// 出参：快照目录存在时返回 `true`，否则返回 `false`。
 pub fn snapshot_exists(repo_root : String, run_id : String) -> Bool raise {
-  let snapshot_dir = @infra.snapshot_run_dir(repo_root, run_id)
+  let snapshot_dir = @adapters.snapshot_dir(repo_root, run_id)
   @infra.path_exists(snapshot_dir)
 }
 
@@ -22,10 +22,27 @@ pub fn read_task_snapshot(
   run_id : String,
 ) -> String? raise {
   let path = @infra.join_path(
-    @infra.snapshot_run_dir(repo_root, run_id),
+    @adapters.snapshot_dir(repo_root, run_id),
     "task.snapshot.json",
   )
   @infra.read_text_if_exists(path)
+}
+
+///|
+/// 从任务快照 JSON 文本里提取任务类型字段，解析失败时回落为 Unknown。
+pub fn extract_task_type(snapshot_text : String) -> String {
+  if snapshot_text.contains("\"task_type\"") {
+    let lines = snapshot_text.split("\n").map(line => line.trim().to_string()).collect()
+    for line in lines {
+      if line.has_prefix("\"task_type\"") {
+        let parts = line.split(":").map(item => item.trim().to_string()).collect()
+        if parts.length() >= 2 {
+          return parts[1].trim_start(chars="\"").trim_end(chars="\",").to_string()
+        }
+      }
+    }
+  }
+  "Unknown"
 }
 
 ///|
