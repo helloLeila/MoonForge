@@ -1,4 +1,4 @@
-# MoonForge Gate / 月门门禁
+# MoonForge Gate / 月之锻造
 
 MoonForge Gate is a MoonBit CLI for AI coding governance before code is committed or merged.  
 MoonForge Gate 是一个用 MoonBit 编写的 AI coding 准入门禁 CLI，用于在提交前和线上复检前拦截问题改动。
@@ -88,7 +88,7 @@ The current acceptance scope focuses on common AI agent coding failures:
 
 See [docs/acceptance/matrix.md](/Users/leila/Documents/Playground%203/moonforge_gate/.worktrees/moonforge-core-impl/docs/acceptance/matrix.md) for the full 10-scenario matrix.
 
-## Acceptance Fixture / 验收夹具
+## Acceptance Fixture / 验收方式
 
 - `examples/acceptance/current.yml`
   Fixed acceptance scenario config.
