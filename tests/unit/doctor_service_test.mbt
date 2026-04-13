@@ -52,3 +52,37 @@ test "render_doctor_report shows healthy when no issues" {
   let report = @services.render_doctor_report([])
   assert_true(report.contains("配置健康"))
 }
+
+///|
+/// 应能报告 pre-commit hook 缺失，避免仓库只初始化规则却没有接通提交前门禁。
+test "diagnose_pre_commit_hook reports missing hook" {
+  let issues = @services.diagnose_pre_commit_hook(
+    "/repo/.git/hooks/pre-commit",
+    false,
+  )
+  assert_eq(issues.length(), 1)
+  assert_true(issues[0].contains("pre-commit"))
+}
+
+///|
+/// 已存在且内容正确的 pre-commit hook 时不应重复上报问题。
+test "diagnose_pre_commit_hook accepts present hook" {
+  let issues = @services.diagnose_pre_commit_hook(
+    "/repo/.git/hooks/pre-commit",
+    true,
+    content="#!/bin/sh\nif [ ! -f .moonforge/current-task.yml ]; then\n  exit 1\nfi\nmoonforge check --repo . --run .moonforge/fixture-runs/pre-commit\n",
+  )
+  assert_true(issues.is_empty())
+}
+
+///|
+/// hook 文件存在但缺少 MoonForge 命令时，doctor 应明确提示脚本内容不完整。
+test "diagnose_pre_commit_hook reports incomplete hook content" {
+  let issues = @services.diagnose_pre_commit_hook(
+    "/repo/.git/hooks/pre-commit",
+    true,
+    content="#!/bin/sh\necho only\n",
+  )
+  assert_eq(issues.length(), 1)
+  assert_true(issues[0].contains("moonforge check"))
+}

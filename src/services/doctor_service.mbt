@@ -1,6 +1,5 @@
 ///|
 /// 文件说明：实现 doctor 命令的独立服务层，负责诊断配置问题并生成诊断报告。
-/// 联动文件：由 `src/services/commands.mbt` 调用，依赖 `src/infra/yaml_parser.mbt` 读取配置文件。
 
 ///|
 /// 检测缺失的必需配置文件。
@@ -52,6 +51,24 @@ pub fn diagnose_required_fields(
     }
   }
   issues
+}
+
+///|
+/// 检测仓库是否已经接通内容完整的 `pre-commit` hook。
+pub fn diagnose_pre_commit_hook(
+  hook_path : String,
+  exists : Bool,
+  content? : String = "",
+) -> Array[String] {
+  if !exists {
+    ["缺失 pre-commit hook：\{hook_path}"]
+  } else if !content.contains("moonforge check") {
+    ["pre-commit hook 内容不完整：缺少 moonforge check 命令"]
+  } else if !content.contains(".moonforge/current-task.yml") {
+    ["pre-commit hook 内容不完整：缺少 current-task 检查"]
+  } else {
+    []
+  }
 }
 
 ///|
