@@ -30,7 +30,7 @@ pub fn diagnose_required_fields(String, Array[String]) -> Array[String]
 
 pub fn diagnose_yaml_syntax(String) -> Array[String]
 
-pub fn dispatch_cli_command(String, String, task_type? : String, title? : String, paths? : String, run? : String, run_id? : String, mode? : String) -> String raise
+pub fn dispatch_cli_command(String, String, task_type? : String, title? : String, paths? : String, run? : String, run_id? : String, mode? : String, acceptance_case? : String) -> String raise
 
 pub fn doctor_repo(String) -> String raise
 
@@ -85,6 +85,8 @@ pub fn repo_rules_header() -> String
 pub fn report_latest(String, mode? : String) -> String raise
 
 pub fn report_summary(String, mode? : String) -> String raise
+
+pub fn run_acceptance_case(String) -> String raise
 
 pub fn run_check(String, String, mode? : String) -> @domain.CheckResult raise
 
