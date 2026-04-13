@@ -562,14 +562,18 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
         Err(code) => errors.push("当前任务文件非法：\{code}")
       }
       if errors.is_empty() {
-        let template = load_template(repo_root, current_task.task_type)
-        match
-          @checkers.validate_template_semantics(
-            @infra.template_yaml_file_name(current_task.task_type),
-            template,
-          ) {
-          Ok(_) => ()
-          Err(code) => errors.push("任务模板文件非法：\{code}")
+        try {
+          let template = load_template(repo_root, current_task.task_type)
+          match
+            @checkers.validate_template_semantics(
+              @infra.template_yaml_file_name(current_task.task_type),
+              template,
+            ) {
+            Ok(_) => ()
+            Err(code) => errors.push("任务模板文件非法：\{code}")
+          }
+        } catch {
+          err => errors.push("任务模板文件非法：\{err.to_string()}")
         }
       }
       }
