@@ -70,3 +70,23 @@ test "create task writes current task file" {
   )
   assert_true(content.contains("feature-change"))
 }
+
+///|
+/// create_task 应支持基于路径组快速生成当前任务文件。
+test "create task writes target groups when group selected" {
+  let repo = unique_init_dir("task-group")
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.create_task(
+      repo,
+      "feature-change",
+      "Add grouped filter",
+      "@frontend_pages",
+    ),
+  )
+  let content = @infra.read_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+  )
+  assert_true(content.contains("target_groups"))
+  assert_true(content.contains("frontend_pages"))
+}

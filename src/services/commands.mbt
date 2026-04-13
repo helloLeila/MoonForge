@@ -298,6 +298,26 @@ fn split_paths_csv(paths_csv : String) -> Array[String] {
 }
 
 ///|
+/// 把 `@group_name` 形式的快捷选择从显式路径里拆出，供 task 命令同时支持路径组与具体路径。
+fn split_task_targets(
+  paths_csv : String,
+) -> (Array[String], Array[String]) {
+  let target_groups : Array[String] = []
+  let target_paths : Array[String] = []
+  for target in split_paths_csv(paths_csv) {
+    if target.has_prefix("@") {
+      let group_name = target[1:target.length()].trim().to_string()
+      if group_name != "" && !target_groups.contains(group_name) {
+        target_groups.push(group_name)
+      }
+    } else if !target_paths.contains(target) {
+      target_paths.push(target)
+    }
+  }
+  (target_groups, target_paths)
+}
+
+///|
 /// 扫描一次运行目录中已经存在的材料文件。
 fn collect_present_artifacts(
   run_dir : String,
@@ -490,16 +510,21 @@ pub fn create_task(
   title : String,
   paths_csv : String,
 ) -> @domain.CurrentTask raise {
+  let repo_rules = load_repo_rules(repo_root)
   let template = load_template(repo_root, task_type)
-  let target_paths = split_paths_csv(paths_csv)
+  let (target_groups, target_paths) = split_task_targets(paths_csv)
   if title.trim() == "" {
     raise Failure::Failure("Task title cannot be empty")
   }
-  if target_paths.is_empty() {
-    raise Failure::Failure("At least one target path is required")
+  if target_groups.is_empty() && target_paths.is_empty() {
+    raise Failure::Failure("At least one target path or target group is required")
   }
 
-  for target_path in target_paths {
+  let expanded_target_groups = @infra.expand_target_groups(
+    repo_rules.path_groups,
+    target_groups,
+  )
+  for target_path in @infra.unique_strings(expanded_target_groups + target_paths) {
     if !@infra.matches_any(target_path, template.allowed_paths) {
       raise Failure::Failure(
         "Target path \{target_path} is outside template allowed paths for \{task_type}",
@@ -515,7 +540,7 @@ pub fn create_task(
   let task = @domain.CurrentTask::{
     task_type,
     title,
-    target_groups: [],
+    target_groups,
     target_paths,
   }
   @infra.write_text(current_task_path(repo_root), render_current_task(task))
