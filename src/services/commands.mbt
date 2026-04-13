@@ -569,6 +569,14 @@ pub fn create_task(
     Err(code) => raise Failure::Failure(code)
   }
   let template = load_template(repo_root, task_type)
+  match
+    @checkers.validate_template_semantics(
+      @infra.template_yaml_file_name(task_type),
+      template,
+    ) {
+    Ok(_) => ()
+    Err(code) => raise Failure::Failure(code)
+  }
   let (target_groups, target_paths) = split_task_targets(paths_csv)
   if title.trim() == "" {
     raise Failure::Failure("Task title cannot be empty")

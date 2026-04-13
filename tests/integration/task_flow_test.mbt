@@ -145,3 +145,45 @@ test "create task accepts custom task type from repo templates" {
   )
   assert_true(content.contains("custom-review"))
 }
+
+///|
+/// create_task 应拦截模板文件名与模板 task_type 不一致的情况。
+test "create task rejects mismatched template task type" {
+  let repo = unique_init_dir("mismatched-template-type")
+  let invalid_template =
+    #|task_type: bug-fix
+    #|
+    #|allowed_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+    #|forbidden_paths:
+    #|  - "infra/**"
+    #|
+    #|allowed_extensions:
+    #|  - ".ts"
+    #|
+    #|required_artifacts:
+    #|  - "test-report.json"
+    #|
+    #|max_changed_files: 8
+    #|
+    #|manual_approval_paths:
+    #|  - "backend/src/main/java/**/service/high-risk/**"
+    #|
+  ignore(@services.init_repo(repo))
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/task-types/feature-change.yml"),
+    invalid_template,
+  )
+
+  try {
+    ignore(
+      @services.create_task(
+        repo, "feature-change", "Add user filter", "frontend/src/pages/**",
+      ),
+    )
+    panic()
+  } catch {
+    err => assert_true(err.to_string().contains("CONFIG_SCHEMA_INVALID"))
+  }
+}
