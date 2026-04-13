@@ -90,6 +90,16 @@ fn cli() -> @argparse.Command {
           @argparse.OptionArg("repo", about="Target repo root", required=true),
         ],
       ),
+      @argparse.Command(
+        "pack",
+        about="Export the latest minimal acceptance package",
+        options=[
+          @argparse.OptionArg("repo", about="Target repo root", required=true),
+          @argparse.OptionArg("mode", about="Execution mode: local or ci", default_values=[
+            "local",
+          ]),
+        ],
+      ),
     ],
   )
 }
@@ -144,6 +154,14 @@ fn main {
         )
       "doctor" =>
         println(@services.dispatch_cli_command(name, option_value(child, "repo")))
+      "pack" =>
+        println(
+          @services.dispatch_cli_command(
+            name,
+            option_value(child, "repo"),
+            mode=option_value(child, "mode"),
+          ),
+        )
       _ => raise Failure::Failure("Unsupported subcommand: \{name}")
     }
   } catch {

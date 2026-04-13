@@ -775,6 +775,7 @@ pub fn dispatch_cli_command(
     }
     "replay" => replay_check(repo_root, run_id)
     "doctor" => doctor_repo(repo_root)
+    "pack" => pack_latest(repo_root, mode=mode)
     _ => raise Failure::Failure("Unsupported subcommand: \{command_name}")
   }
 }
