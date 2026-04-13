@@ -4,6 +4,7 @@
 
 ///|
 /// 当前任务文件对应的运行时对象。
+/// 其中 `target_groups` 会在后续合并阶段展开成具体 glob，再与 `target_paths` 合并。
 pub(all) struct CurrentTask {
   task_type : String
   title : String
@@ -13,6 +14,7 @@ pub(all) struct CurrentTask {
 
 ///|
 /// 仓库规则、模板规则与当前任务合并后的生效约束。
+/// 其中 `max_changed_files` 表示合并后最终采用的更严格文件上限。
 pub(all) struct EffectiveTask {
   task_type : String
   title : String

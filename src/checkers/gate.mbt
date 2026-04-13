@@ -77,6 +77,12 @@ pub fn build_effective_task(
 }
 
 ///|
+/// 取两个文件上限中更严格的那个值，避免合并后放宽门禁。
+pub fn pick_stricter_limit(left : Int, right : Int) -> Int {
+  if left <= right { left } else { right }
+}
+
+///|
 /// 执行路径、后缀、材料和审批要求的完整门禁判定。
 pub fn evaluate_gate(
   effective_task : @domain.EffectiveTask,
