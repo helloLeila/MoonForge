@@ -44,6 +44,28 @@ test "validate fails when current task missing" {
 }
 
 ///|
+/// validate_repo 应在当前任务缺少 title 时返回错误，而不是抛出异常。
+test "validate fails when current task title missing" {
+  let repo = unique_validate_dir("missing-title")
+  let invalid_task =
+    #|task_type: "feature-change"
+    #|
+    #|target_groups:
+    #|  - "frontend_pages"
+    #|
+    #|target_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+  ignore(@services.init_repo(repo))
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+    invalid_task,
+  )
+  let result = @services.validate_repo(repo)
+  assert_true(result is Err(_))
+}
+
+///|
 /// validate_repo 应在当前任务引用的模板语义非法时返回错误。
 test "validate fails when active template semantics invalid" {
   let repo = unique_validate_dir("template")

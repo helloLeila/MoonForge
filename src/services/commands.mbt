@@ -553,11 +553,9 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
     errors.push("当前任务文件不存在：\{current_task_file}")
   } else {
     let task_text = @infra.read_text(current_task_file)
-    if task_text.trim() == "" {
-      errors.push("当前任务文件为空")
-    } else if !task_text.contains("task_type") {
-      errors.push("当前任务文件缺少 task_type 字段")
-    } else {
+    match validate_current_task_text(task_text) {
+      Err(code) => errors.push("当前任务文件非法：\{code}")
+      Ok(_) => {
       let current_task = load_current_task(repo_root)
       match @checkers.validate_current_task(current_task) {
         Ok(_) => ()
@@ -573,6 +571,7 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
           Ok(_) => ()
           Err(code) => errors.push("任务模板文件非法：\{code}")
         }
+      }
       }
     }
   }
