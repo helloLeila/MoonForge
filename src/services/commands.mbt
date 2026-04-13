@@ -509,6 +509,32 @@ pub fn create_task(
 }
 
 ///|
+/// 校验仓库配置文件的完整性与合法性，返回校验结果。
+pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
+  let errors : Array[String] = []
+  let repo_rules_file = repo_rules_path(repo_root)
+  if !@infra.path_exists(repo_rules_file) {
+    errors.push("仓库规则文件不存在：\{repo_rules_file}")
+  }
+  let current_task_file = current_task_path(repo_root)
+  if !@infra.path_exists(current_task_file) {
+    errors.push("当前任务文件不存在：\{current_task_file}")
+  } else {
+    let task_text = @infra.read_text(current_task_file)
+    if task_text.trim() == "" {
+      errors.push("当前任务文件为空")
+    } else if !task_text.contains("task_type") {
+      errors.push("当前任务文件缺少 task_type 字段")
+    }
+  }
+  if errors.is_empty() {
+    Ok("配置校验通过")
+  } else {
+    Err(errors.join("; "))
+  }
+}
+
+///|
 /// 执行一次完整门禁检查并落盘输出结果。
 pub fn run_check(
   repo_root : String,

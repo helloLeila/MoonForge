@@ -22,9 +22,17 @@ pub fn feature_change_template_header() -> String
 
 pub fn init_repo(String) -> String raise
 
+pub fn make_run_id(UInt64) -> String
+
 pub fn parse_target_paths(String) -> Array[String]
 
+pub fn render_check_summary(String, String, Int, Int) -> String
+
 pub fn render_current_task_yaml(String, String, Array[String]) -> String
+
+pub fn render_validate_report(Array[String]) -> String
+
+pub fn render_violations_text(Array[String]) -> String
 
 pub fn repo_rules_header() -> String
 
@@ -32,9 +40,19 @@ pub fn report_latest(String, mode? : String) -> String raise
 
 pub fn run_check(String, String, mode? : String) -> @domain.CheckResult raise
 
+pub fn should_exit_nonzero(String) -> Bool
+
 pub fn summarize_result(@domain.CheckResult) -> String
 
 pub fn test_addition_template_header() -> String
+
+pub fn validate_current_task_text(String) -> Result[Unit, String]
+
+pub fn validate_repo(String) -> Result[String, String] raise
+
+pub fn validate_repo_rules_text(String) -> Result[Unit, String]
+
+pub fn validate_required_fields(String, Array[String]) -> Result[Unit, String]
 
 pub fn validate_task_type(String) -> Result[Unit, String]
 
