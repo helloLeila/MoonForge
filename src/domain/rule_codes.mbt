@@ -26,34 +26,30 @@ pub(all) struct DecisionView {
 /// 出参：`DecisionView`，用于上层命令、测试或报告层读取稳定字段。
 pub fn DecisionView::from_decision(decision : Decision) -> DecisionView {
   match decision {
-    Accept =>
-      {
-        code: "Accept",
-        text_zh: "允许放行",
-        text_en: "accept",
-        action_zh: "可进入下一阶段",
-      }
-    Retryable =>
-      {
-        code: "Retryable",
-        text_zh: "补齐后重试",
-        text_en: "retryable",
-        action_zh: "补齐材料后重新执行检查",
-      }
-    Reject =>
-      {
-        code: "Reject",
-        text_zh: "拒绝放行",
-        text_en: "reject",
-        action_zh: "撤回越界修改或缩小变更范围后重新提交",
-      }
-    NeedHumanApproval =>
-      {
-        code: "NeedHumanApproval",
-        text_zh: "需要人工审批",
-        text_en: "need human approval",
-        action_zh: "转人工审批或拆分高风险修改",
-      }
+    Accept => {
+      code: "Accept",
+      text_zh: "允许放行",
+      text_en: "accept",
+      action_zh: "可进入下一阶段",
+    }
+    Retryable => {
+      code: "Retryable",
+      text_zh: "补齐后重试",
+      text_en: "retryable",
+      action_zh: "补齐材料后重新执行检查",
+    }
+    Reject => {
+      code: "Reject",
+      text_zh: "拒绝放行",
+      text_en: "reject",
+      action_zh: "撤回越界修改或缩小变更范围后重新提交",
+    }
+    NeedHumanApproval => {
+      code: "NeedHumanApproval",
+      text_zh: "需要人工审批",
+      text_en: "need human approval",
+      action_zh: "转人工审批或拆分高风险修改",
+    }
   }
 }
 
