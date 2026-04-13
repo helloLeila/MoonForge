@@ -167,3 +167,11 @@ test "cli dispatches pack command" {
   let output = @services.dispatch_cli_command("pack", repo)
   assert_true(output.contains("打包完成"))
 }
+
+///|
+/// acc 子命令应调用内部验收 runner，并返回固定 case 的结果摘要。
+test "cli dispatches acc command" {
+  let output = @services.dispatch_cli_command("acc", "", acceptance_case="pass")
+  assert_true(output.contains("Accept"))
+  assert_true(output.contains("pass"))
+}
