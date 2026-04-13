@@ -133,7 +133,7 @@ test "feature change pass flow writes accept outputs" {
     seed_run(run_dir, pass_diff())
 
     let result = @services.run_check(repo_root, run_dir)
-    assert_eq(result.decision, @domain.Accept)
+    assert_true(result.decision == @domain.Accept)
     assert_true(
       @infra.path_exists(
         @infra.join_path(
@@ -162,8 +162,67 @@ test "feature change missing artifact becomes retryable" {
     seed_run(run_dir, pass_diff(), include_review_report=false)
 
     let result = @services.run_check(repo_root, run_dir)
-    assert_eq(result.decision, @domain.Retryable)
+    assert_true(result.decision == @domain.Retryable)
     assert_eq(result.missing_artifacts, ["review-report.json"])
+  } catch {
+    err => {
+      println(err.to_string())
+      panic()
+    }
+  }
+}
+
+///|
+/// 验证 repo-rules 中的路径组和更严格文件上限，会通过加载链路影响最终门禁结果。
+test "repo rules path groups and stricter max file count affect run check" {
+  let repo_root = unique_repo_root("repo-rules")
+  let run_dir = @infra.join_path(repo_root, "fixture-runs/repo-rules")
+  try {
+    seed_repo(repo_root)
+    ignore(@services.init_repo(repo_root))
+    let repo_rules_text =
+      #|protected_paths:
+      #|  - "backend/src/main/java/**/security/**"
+      #|  - "infra/**"
+      #|approval_required_paths:
+      #|  - "backend/src/main/java/**/service/high-risk/**"
+      #|default_allowed_extensions:
+      #|  - ".java"
+      #|  - ".ts"
+      #|  - ".tsx"
+      #|  - ".md"
+      #|  - ".json"
+      #|max_changed_files: 1
+      #|path_groups.frontend_user_pages:
+      #|  - "frontend/src/pages/**"
+      #|path_groups.frontend_components:
+      #|  - "frontend/src/components/**"
+      #|
+    @infra.write_text(
+      @infra.join_path(repo_root, ".moonforge/repo-rules.yml"),
+      repo_rules_text,
+    )
+    let current_task_text =
+      #|task_type: feature-change
+      #|title: "Group scoped task"
+      #|target_groups:
+      #|  - "frontend_user_pages"
+      #|  - "frontend_components"
+      #|target_paths:
+      #|
+    @infra.write_text(
+      @infra.join_path(repo_root, ".moonforge/current-task.yml"),
+      current_task_text,
+    )
+    seed_run(run_dir, pass_diff())
+
+    let result = @services.run_check(repo_root, run_dir)
+    assert_true(result.decision == @domain.Reject)
+    assert_true(result.changed_file_count_exceeded)
+    assert_eq(result.effective_task.allowed_paths, [
+      "frontend/src/pages/**", "frontend/src/components/**",
+    ])
+    assert_eq(result.effective_task.max_changed_files, 1)
   } catch {
     err => {
       println(err.to_string())
@@ -183,7 +242,7 @@ test "touching protected path becomes reject" {
     seed_run(run_dir, reject_diff())
 
     let result = @services.run_check(repo_root, run_dir)
-    assert_eq(result.decision, @domain.Reject)
+    assert_true(result.decision == @domain.Reject)
     assert_true(
       result.protected_files.contains(
         "backend/src/main/java/com/acme/common/security/AuthFilter.java",
@@ -210,7 +269,7 @@ test "high risk path becomes need human approval" {
     seed_run(run_dir, manual_approval_diff())
 
     let result = @services.run_check(repo_root, run_dir)
-    assert_eq(result.decision, @domain.NeedHumanApproval)
+    assert_true(result.decision == @domain.NeedHumanApproval)
     assert_true(
       result.approval_required_files.contains(
         "backend/src/main/java/com/acme/user/service/high-risk/UserAuditService.java",

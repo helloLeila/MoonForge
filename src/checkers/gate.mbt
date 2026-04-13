@@ -39,6 +39,7 @@ pub fn extract_touched_files(diff_text : String) -> Array[String] {
 
 ///|
 /// 将仓库规则、模板规则和当前任务合并为一次检查的最终约束。
+/// 这里会展开 `target_groups`，并把 repo 级与模板级文件上限收紧成最终值。
 pub fn build_effective_task(
   repo_rules : @domain.RepoRules,
   template : @domain.TaskTemplate,
@@ -50,10 +51,27 @@ pub fn build_effective_task(
     )
   }
 
-  let allowed_paths = if current_task.target_paths.is_empty() {
+  let expanded_target_groups = @infra.expand_target_groups(
+    repo_rules.path_groups,
+    current_task.target_groups,
+  )
+  let explicit_allowed_paths = @infra.unique_strings(
+    expanded_target_groups + current_task.target_paths,
+  )
+  let invalid_explicit_targets = explicit_allowed_paths.filter(path => {
+    !@infra.matches_any(path, template.allowed_paths)
+  })
+  if !invalid_explicit_targets.is_empty() {
+    raise Failure::Failure("TASK_SCOPE_INVALID")
+  }
+  let allowed_paths = if explicit_allowed_paths.is_empty() {
     template.allowed_paths
   } else {
-    current_task.target_paths
+    explicit_allowed_paths
+  }
+  let max_changed_files = match repo_rules.max_changed_files {
+    Some(limit) => pick_stricter_limit(template.max_changed_files, limit)
+    None => template.max_changed_files
   }
 
   @domain.EffectiveTask::{
@@ -72,14 +90,18 @@ pub fn build_effective_task(
       template.allowed_extensions
     },
     required_artifacts: @infra.unique_strings(template.required_artifacts),
-    max_changed_files: template.max_changed_files,
+    max_changed_files,
   }
 }
 
 ///|
 /// 取两个文件上限中更严格的那个值，避免合并后放宽门禁。
 pub fn pick_stricter_limit(left : Int, right : Int) -> Int {
-  if left <= right { left } else { right }
+  if left <= right {
+    left
+  } else {
+    right
+  }
 }
 
 ///|

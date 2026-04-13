@@ -12,6 +12,8 @@ pub fn evaluate_gate(@domain.EffectiveTask, String, Array[String], String) -> @d
 
 pub fn extract_touched_files(String) -> Array[String]
 
+pub fn pick_stricter_limit(Int, Int) -> Int
+
 pub fn validate_current_task(@domain.CurrentTask) -> Result[Unit, String]
 
 pub fn validate_template_semantics(String, @domain.TaskTemplate) -> Result[Unit, String]

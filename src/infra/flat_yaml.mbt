@@ -9,7 +9,7 @@
 pub struct FlatYaml {
   scalars : Map[String, String]
   lists : Map[String, Array[String]]
-} derive(Show)
+} derive(Debug)
 
 ///|
 /// 读取某个标量字段，不存在时返回 None。
@@ -21,6 +21,21 @@ pub fn FlatYaml::get_scalar(self : FlatYaml, key : String) -> String? {
 /// 读取某个列表字段，不存在时返回空数组。
 pub fn FlatYaml::get_list(self : FlatYaml, key : String) -> Array[String] {
   self.lists.get_or_default(key, [])
+}
+
+///|
+/// 按键名前缀提取多组列表字段，并去掉公共前缀作为输出 map 的组名。
+pub fn FlatYaml::get_lists_with_prefix(
+  self : FlatYaml,
+  prefix : String,
+) -> Map[String, Array[String]] {
+  let matched : Map[String, Array[String]] = {}
+  self.lists.each((key, values) => {
+    if key.has_prefix(prefix) {
+      matched[key[prefix.length():key.length()].to_string()] = values
+    }
+  })
+  matched
 }
 
 ///|

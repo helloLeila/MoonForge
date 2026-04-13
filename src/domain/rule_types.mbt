@@ -3,11 +3,13 @@
 /// 联动文件：被 `src/services/commands.mbt` 读取并渲染为配置文件，也被 `src/checkers/gate.mbt` 用于合并约束。
 
 ///|
-/// 仓库级长期规则，负责表达受保护目录和全局允许后缀。
+/// 仓库级长期规则，负责表达受保护目录、路径组、全局允许后缀与可选的仓库级文件上限。
 pub(all) struct RepoRules {
   protected_paths : Array[String]
   approval_required_paths : Array[String]
   default_allowed_extensions : Array[String]
+  path_groups : Map[String, Array[String]]
+  max_changed_files : Int?
 } derive(Debug)
 
 ///|

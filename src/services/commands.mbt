@@ -25,6 +25,23 @@ fn int_required(yaml : @infra.FlatYaml, key : String) -> Int raise {
 }
 
 ///|
+/// 将 YAML 中的可选整数字段解析成 `Int?`，缺失时保留 `None`。
+fn int_optional(yaml : @infra.FlatYaml, key : String) -> Int? raise {
+  match yaml.get_scalar(key) {
+    Some(value) =>
+      Some(
+        @string.parse_int(value) catch {
+          err =>
+            raise Failure::Failure(
+              "Field \{key} is not a valid integer: \{err.to_string()}",
+            )
+        },
+      )
+    None => None
+  }
+}
+
+///|
 /// 默认模板种子，用来批量生成 task-types 下的模板文件。
 priv struct TemplateSeed {
   name : String
@@ -63,6 +80,8 @@ fn load_repo_rules(repo_root : String) -> @domain.RepoRules raise {
     protected_paths: yaml.get_list("protected_paths"),
     approval_required_paths: yaml.get_list("approval_required_paths"),
     default_allowed_extensions: yaml.get_list("default_allowed_extensions"),
+    path_groups: yaml.get_lists_with_prefix("path_groups."),
+    max_changed_files: int_optional(yaml, "max_changed_files"),
   }
 }
 
@@ -107,6 +126,19 @@ fn render_list_block(key : String, values : Array[String]) -> String {
 }
 
 ///|
+/// 将带公共前缀的命名列表集合渲染成多个 YAML 列表块。
+fn render_prefixed_list_blocks(
+  prefix : String,
+  groups : Map[String, Array[String]],
+) -> Array[String] {
+  let blocks : Array[String] = []
+  groups.each((name, values) => {
+    blocks.push(render_list_block("\{prefix}\{name}", values))
+  })
+  blocks
+}
+
+///|
 /// 将任务模板对象渲染为模板 YAML。
 fn render_task_template(template : @domain.TaskTemplate) -> String {
   [
@@ -124,7 +156,7 @@ fn render_task_template(template : @domain.TaskTemplate) -> String {
 ///|
 /// 将仓库规则对象渲染为仓库规则 YAML。
 fn render_repo_rules(repo_rules : @domain.RepoRules) -> String {
-  [
+  let sections : Array[String] = [
     render_list_block("protected_paths", repo_rules.protected_paths),
     render_list_block(
       "approval_required_paths",
@@ -134,8 +166,16 @@ fn render_repo_rules(repo_rules : @domain.RepoRules) -> String {
       "default_allowed_extensions",
       repo_rules.default_allowed_extensions,
     ),
-  ].join("\n\n") +
-  "\n"
+  ]
+  match repo_rules.max_changed_files {
+    Some(limit) => sections.push("max_changed_files: \{limit}")
+    None => ()
+  }
+  for
+    block in render_prefixed_list_blocks("path_groups.", repo_rules.path_groups) {
+    sections.push(block)
+  }
+  sections.join("\n\n") + "\n"
 }
 
 ///|
@@ -159,6 +199,13 @@ fn default_repo_rules() -> @domain.RepoRules {
     default_allowed_extensions: [
       ".java", ".ts", ".tsx", ".md", ".json", ".yml", ".yaml",
     ],
+    path_groups: {
+      "frontend_pages": ["frontend/src/pages/**"],
+      "frontend_components": ["frontend/src/components/**"],
+      "backend_user_module": ["backend/src/main/java/**/user/**"],
+      "tests_root": ["tests/**"],
+    },
+    max_changed_files: None,
   }
 }
 

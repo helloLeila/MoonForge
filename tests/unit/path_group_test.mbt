@@ -14,8 +14,116 @@ test "path group expansion returns concrete globs" {
 }
 
 ///|
+/// 生效任务合并应把目标组展开结果并入最终允许路径。
+test "effective task merge expands target groups into allowed paths" {
+  let repo_rules = @domain.RepoRules::{
+    protected_paths: ["infra/**"],
+    approval_required_paths: ["backend/src/main/java/**/service/high-risk/**"],
+    default_allowed_extensions: [".ts", ".tsx", ".md"],
+    max_changed_files: None,
+    path_groups: {
+      "frontend_user_pages": [
+        "frontend/src/pages/UserList/**", "frontend/src/pages/UserDetail/**",
+      ],
+    },
+  }
+  let template = @domain.TaskTemplate::{
+    task_type: "feature-change",
+    allowed_paths: ["frontend/src/pages/**", "frontend/src/components/**"],
+    forbidden_paths: [],
+    allowed_extensions: [".ts", ".tsx", ".md"],
+    required_artifacts: ["test-report.json"],
+    max_changed_files: 8,
+    manual_approval_paths: [],
+  }
+  let current_task = @domain.CurrentTask::{
+    task_type: "feature-change",
+    title: "Refine user pages",
+    target_groups: ["frontend_user_pages"],
+    target_paths: ["frontend/src/components/UserCard/**"],
+  }
+
+  let effective = @checkers.build_effective_task(
+    repo_rules, template, current_task,
+  )
+  assert_eq(effective.allowed_paths, [
+    "frontend/src/pages/UserList/**", "frontend/src/pages/UserDetail/**", "frontend/src/components/UserCard/**",
+  ])
+}
+
+///|
+/// 生效任务合并应拒绝任何试图越过模板默认边界的显式目标。
+test "effective task merge rejects explicit targets outside template scope" {
+  let repo_rules = @domain.RepoRules::{
+    protected_paths: ["infra/**"],
+    approval_required_paths: [],
+    default_allowed_extensions: [".ts", ".tsx", ".md"],
+    max_changed_files: None,
+    path_groups: {
+      "mixed_targets": [
+        "frontend/src/pages/UserList/**", "backend/src/main/java/**/service/**",
+      ],
+    },
+  }
+  let template = @domain.TaskTemplate::{
+    task_type: "feature-change",
+    allowed_paths: ["frontend/src/pages/**"],
+    forbidden_paths: [],
+    allowed_extensions: [".ts", ".tsx", ".md"],
+    required_artifacts: ["test-report.json"],
+    max_changed_files: 8,
+    manual_approval_paths: [],
+  }
+  let current_task = @domain.CurrentTask::{
+    task_type: "feature-change",
+    title: "Refine user page",
+    target_groups: ["mixed_targets"],
+    target_paths: ["frontend/src/components/UserCard/**"],
+  }
+
+  try {
+    ignore(@checkers.build_effective_task(repo_rules, template, current_task))
+    panic()
+  } catch {
+    err => assert_true(err.to_string().contains("TASK_SCOPE_INVALID"))
+  }
+}
+
+///|
 /// 有效任务合并应保留更严格的文件数上限。
 test "effective task merge keeps stricter max file count" {
+  let repo_rules = @domain.RepoRules::{
+    protected_paths: ["infra/**"],
+    approval_required_paths: [],
+    default_allowed_extensions: [".ts", ".tsx", ".md"],
+    max_changed_files: Some(3),
+    path_groups: { "frontend_user_pages": ["frontend/src/pages/UserList/**"] },
+  }
+  let template = @domain.TaskTemplate::{
+    task_type: "feature-change",
+    allowed_paths: ["frontend/src/pages/**"],
+    forbidden_paths: [],
+    allowed_extensions: [".ts", ".tsx", ".md"],
+    required_artifacts: ["test-report.json"],
+    max_changed_files: 8,
+    manual_approval_paths: [],
+  }
+  let current_task = @domain.CurrentTask::{
+    task_type: "feature-change",
+    title: "Refine user page",
+    target_groups: ["frontend_user_pages"],
+    target_paths: [],
+  }
+
+  let effective = @checkers.build_effective_task(
+    repo_rules, template, current_task,
+  )
+  assert_eq(effective.max_changed_files, 3)
+}
+
+///|
+/// 更严格上限 helper 应返回较小的限制值。
+test "stricter limit helper picks smaller value" {
   let task_limit = @checkers.pick_stricter_limit(8, 3)
   assert_eq(task_limit, 3)
 }

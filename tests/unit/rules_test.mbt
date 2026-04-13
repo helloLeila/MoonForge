@@ -46,6 +46,26 @@ test "flat yaml parser reads scalar and list fields" {
 }
 
 ///|
+/// 验证最小 YAML 解析器能按前缀归并路径组列表字段。
+test "flat yaml parser groups prefixed list fields" {
+  let yaml_text =
+    #|path_groups.frontend_user_pages:
+    #|  - "frontend/src/pages/UserList/**"
+    #|  - "frontend/src/pages/UserDetail/**"
+    #|path_groups.frontend_shared_components:
+    #|  - "frontend/src/components/UserCard/**"
+    #|
+  let yaml = @infra.parse_flat_yaml(yaml_text)
+
+  assert_eq(yaml.get_lists_with_prefix("path_groups."), {
+    "frontend_user_pages": [
+      "frontend/src/pages/UserList/**", "frontend/src/pages/UserDetail/**",
+    ],
+    "frontend_shared_components": ["frontend/src/components/UserCard/**"],
+  })
+}
+
+///|
 /// 验证 diff 解析器能从标准 git patch 中提取被修改文件。
 test "diff extractor collects touched git files" {
   let diff =

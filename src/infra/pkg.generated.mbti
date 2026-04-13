@@ -1,12 +1,18 @@
 // Generated using `moon info`, DON'T EDIT IT
 package "leila/moonforge_gate/src/infra"
 
+import {
+  "moonbitlang/core/debug",
+}
+
 // Values
 pub fn basename(String) -> String
 
 pub fn dirname(String) -> String
 
 pub fn ensure_dir(String) -> Unit raise
+
+pub fn expand_target_groups(Map[String, Array[String]], Array[String]) -> Array[String] raise
 
 pub fn extension_of(String) -> String
 
@@ -44,8 +50,9 @@ pub fn write_text(String, String) -> Unit raise
 pub struct FlatYaml {
   scalars : Map[String, String]
   lists : Map[String, Array[String]]
-} derive(Show)
+} derive(@debug.Debug)
 pub fn FlatYaml::get_list(Self, String) -> Array[String]
+pub fn FlatYaml::get_lists_with_prefix(Self, String) -> Map[String, Array[String]]
 pub fn FlatYaml::get_scalar(Self, String) -> String?
 
 // Type aliases

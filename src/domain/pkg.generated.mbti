@@ -86,6 +86,8 @@ pub(all) struct RepoRules {
   protected_paths : Array[String]
   approval_required_paths : Array[String]
   default_allowed_extensions : Array[String]
+  path_groups : Map[String, Array[String]]
+  max_changed_files : Int?
 } derive(@debug.Debug)
 
 pub(all) struct ScopeResultFile {
