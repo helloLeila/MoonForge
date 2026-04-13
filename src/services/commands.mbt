@@ -560,9 +560,21 @@ pub fn validate_repo(repo_root : String) -> Result[String, String] raise {
     } else if !task_text.contains("task_type") {
       errors.push("当前任务文件缺少 task_type 字段")
     } else {
-      match @checkers.validate_current_task(load_current_task(repo_root)) {
+      let current_task = load_current_task(repo_root)
+      match @checkers.validate_current_task(current_task) {
         Ok(_) => ()
         Err(code) => errors.push("当前任务文件非法：\{code}")
+      }
+      if errors.is_empty() {
+        let template = load_template(repo_root, current_task.task_type)
+        match
+          @checkers.validate_template_semantics(
+            @infra.template_yaml_file_name(current_task.task_type),
+            template,
+          ) {
+          Ok(_) => ()
+          Err(code) => errors.push("任务模板文件非法：\{code}")
+        }
       }
     }
   }
