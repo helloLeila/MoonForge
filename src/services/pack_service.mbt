@@ -22,6 +22,18 @@ pub fn generate_pack_filename(run_id : String) -> String {
 }
 
 ///|
+/// 计算打包文件的总大小估算值（字节）。
+/// 入参：`file_sizes`，文件大小数组。
+/// 出参：总大小的整数值。
+pub fn calculate_total_size(file_sizes : Array[Int]) -> Int {
+  let mut total = 0
+  for size in file_sizes {
+    total = total + size
+  }
+  total
+}
+
+///|
 /// 渲染打包成功的终端提示文本。
 /// 入参：`archive_path`，生成的压缩包完整路径。
 /// 入参：`file_count`，打包的文件数量。
