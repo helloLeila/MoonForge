@@ -24,6 +24,8 @@ pub fn join_path(String, String) -> String
 
 pub fn latest_run_dir(String, String) -> String
 
+pub fn list_dir(String) -> Array[String] raise
+
 pub fn match_glob(String, String) -> Bool
 
 pub fn matches_any(String, Array[String]) -> Bool
@@ -47,6 +49,8 @@ pub fn read_text_if_exists(String) -> String? raise
 pub fn render_gate_report(String, String, String, String, String, Int, Array[String]) -> String
 
 pub fn render_terminal_summary(String, String, Int) -> String
+
+pub fn run_shell_command(String, String) -> Int raise
 
 pub fn snapshot_run_dir(String, String) -> String
 
