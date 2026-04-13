@@ -42,8 +42,14 @@ fn violation_code_text_en(code : String) -> String {
     "PATH_OUT_OF_SCOPE" => "path out of scope"
     "PROTECTED_PATH_TOUCHED" => "protected path touched"
     "FORBIDDEN_EXTENSION" => "forbidden extension"
+    "BLOCKED_FILE_NAME" => "blocked file name"
+    "BLOCKED_FILE_PATTERN" => "blocked file pattern"
+    "GENERATED_ARTIFACT_TOUCHED" => "generated artifact touched"
     "CHANGED_FILE_COUNT_EXCEEDED" => "changed file count exceeded"
     "MISSING_ARTIFACT" => "missing artifact"
+    "ARTIFACT_INVALID" => "artifact invalid"
+    "REQUIRED_COMMAND_FAILED" => "required command failed"
+    "CONTENT_PATTERN_BLOCKED" => "content pattern blocked"
     "MANUAL_APPROVAL_REQUIRED" => "manual approval required"
     _ => code
   }
@@ -60,8 +66,14 @@ pub(all) struct CheckResult {
   protected_files : Array[String]
   approval_required_files : Array[String]
   forbidden_extension_files : Array[String]
+  blocked_file_name_files : Array[String]
+  blocked_file_pattern_files : Array[String]
+  generated_artifact_files : Array[String]
   missing_artifacts : Array[String]
+  invalid_artifacts : Array[String]
   provided_artifacts : Array[String]
+  command_failures : Array[String]
+  content_blocklist_hits : Array[String]
   effective_task : EffectiveTask
   changed_file_count : Int
   changed_file_count_exceeded : Bool
@@ -75,6 +87,9 @@ pub(all) struct ScopeResultFile {
   protected_files : Array[String]
   approval_required_files : Array[String]
   forbidden_extension_files : Array[String]
+  blocked_file_name_files : Array[String]
+  blocked_file_pattern_files : Array[String]
+  generated_artifact_files : Array[String]
   changed_file_count : Int
   max_changed_files : Int
 } derive(Debug, ToJson)
@@ -85,6 +100,8 @@ pub(all) struct ArtifactResultFile {
   required_artifacts : Array[String]
   provided_artifacts : Array[String]
   missing_artifacts : Array[String]
+  invalid_artifacts : Array[String]
+  command_failures : Array[String]
 } derive(Debug, ToJson)
 
 ///|

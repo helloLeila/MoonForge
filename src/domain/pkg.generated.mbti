@@ -14,6 +14,8 @@ pub(all) struct ArtifactResultFile {
   required_artifacts : Array[String]
   provided_artifacts : Array[String]
   missing_artifacts : Array[String]
+  invalid_artifacts : Array[String]
+  command_failures : Array[String]
 } derive(ToJson, @debug.Debug)
 
 pub(all) struct CheckResult {
@@ -25,8 +27,14 @@ pub(all) struct CheckResult {
   protected_files : Array[String]
   approval_required_files : Array[String]
   forbidden_extension_files : Array[String]
+  blocked_file_name_files : Array[String]
+  blocked_file_pattern_files : Array[String]
+  generated_artifact_files : Array[String]
   missing_artifacts : Array[String]
+  invalid_artifacts : Array[String]
   provided_artifacts : Array[String]
+  command_failures : Array[String]
+  content_blocklist_hits : Array[String]
   effective_task : EffectiveTask
   changed_file_count : Int
   changed_file_count_exceeded : Bool
@@ -64,7 +72,13 @@ pub(all) struct EffectiveTask {
   forbidden_paths : Array[String]
   approval_required_paths : Array[String]
   allowed_extensions : Array[String]
+  blocked_extensions : Array[String]
+  generated_artifact_paths : Array[String]
+  blocked_file_names : Array[String]
+  blocked_file_patterns : Array[String]
+  content_blocklist_patterns : Array[String]
   required_artifacts : Array[String]
+  required_commands : Array[String]
   max_changed_files : Int
 } derive(ToJson, @debug.Debug)
 
@@ -85,6 +99,11 @@ pub(all) struct GateResultFile {
 pub(all) struct RepoRules {
   protected_paths : Array[String]
   approval_required_paths : Array[String]
+  blocked_extensions : Array[String]
+  generated_artifact_paths : Array[String]
+  blocked_file_names : Array[String]
+  blocked_file_patterns : Array[String]
+  content_blocklist_patterns : Array[String]
   default_allowed_extensions : Array[String]
   path_groups : Map[String, Array[String]]
   max_changed_files : Int?
@@ -96,6 +115,9 @@ pub(all) struct ScopeResultFile {
   protected_files : Array[String]
   approval_required_files : Array[String]
   forbidden_extension_files : Array[String]
+  blocked_file_name_files : Array[String]
+  blocked_file_pattern_files : Array[String]
+  generated_artifact_files : Array[String]
   changed_file_count : Int
   max_changed_files : Int
 } derive(ToJson, @debug.Debug)
@@ -106,6 +128,7 @@ pub(all) struct TaskTemplate {
   forbidden_paths : Array[String]
   allowed_extensions : Array[String]
   required_artifacts : Array[String]
+  required_commands : Array[String]
   max_changed_files : Int
   manual_approval_paths : Array[String]
 } derive(@debug.Debug)
