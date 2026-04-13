@@ -131,96 +131,96 @@
 
 下列提交切片用于保证实现阶段每次只交付一个真实功能点。实际执行时必须按 TDD 顺序完成后再提交。
 
-1. `feat：补充双语结论编码模型`
-2. `feat：补充双语违规项结构模型`
-3. `feat：补充路径组领域对象`
-4. `feat：补充材料结构描述模型`
-5. `feat：补充审计事件领域对象`
-6. `feat：补充运行快照领域对象`
-7. `feat：补充模板规则领域对象`
-8. `feat：补充当前任务领域对象`
-9. `feat：补充有效任务合并结果对象`
-10. `feat：补充 GitHub CI 运行上下文对象`
-11. `feat：补充 YAML 结构校验器`
-12. `feat：补充路径组展开器`
-13. `feat：补充路径组引用合法性校验`
-14. `feat：补充路径模式语法校验`
-15. `feat：补充模板文件名与任务类型一致性校验`
-16. `feat：补充允许与禁止路径冲突校验`
-17. `feat：补充任务目标最小输入校验`
-18. `feat：补充任务禁止放宽仓库规则校验`
-19. `feat：补充补丁文件解析器`
-20. `feat：补充暂存区差异读取适配器`
-21. `feat：补充 CI 差异读取适配器`
-22. `feat：补充 GitHub 环境变量识别器`
-23. `feat：补充变更文件归一化逻辑`
-24. `feat：补充改动文件数量统计器`
-25. `feat：补充范围越界检查器`
-26. `feat：补充目标区域命中检查器`
-27. `feat：补充多任务混杂规模检查器`
-28. `feat：补充受保护目录检查器`
-29. `feat：补充人工审批路径检查器`
-30. `feat：补充默认允许后缀检查器`
-31. `feat：补充敏感文件模式检查器`
-32. `feat：补充真实环境文件拦截器`
-33. `feat：补充二进制与压缩产物拦截器`
-34. `feat：补充材料存在性检查器`
-35. `feat：补充材料空内容检查器`
-36. `feat：补充 JSON 材料结构校验器`
-37. `feat：补充 Markdown 材料最小正文校验`
-38. `feat：补充功能变更材料规则`
-39. `feat：补充缺陷修复材料规则`
-40. `feat：补充接口修改材料规则`
-41. `feat：补充配置修改材料规则`
-42. `feat：补充补充测试材料规则`
-43. `feat：补充正式结论优先级构建器`
-44. `feat：补充双语终端摘要生成器`
-45. `feat：补充 Markdown 报告生成器`
-46. `feat：补充 gate-result 结构化输出`
-47. `feat：补充 checked-files 清单输出`
-48. `feat：补充 events 审计日志输出`
-49. `feat：补充 task snapshot 归档输出`
-50. `feat：补充本地 latest 输出目录布局`
-51. `feat：补充 CI latest 输出目录布局`
-52. `feat：补充 init 仓库规则种子生成`
-53. `feat：补充五类模板种子生成`
-54. `feat：补充当前任务样例生成`
-55. `feat：补充交互式任务创建服务`
-56. `feat：补充路径组驱动任务创建`
-57. `feat：补充 validate 命令服务`
-58. `feat：补充 check 命令服务`
-59. `feat：补充 report 命令服务`
-60. `feat：补充 replay 命令服务`
-61. `feat：补充 doctor 命令服务`
-62. `feat：补充 pack 命令服务`
-63. `feat：补充 CLI validate 子命令`
-64. `feat：补充 CLI replay 子命令`
-65. `feat：补充 CLI doctor 子命令`
-66. `feat：补充 CLI pack 子命令`
-67. `feat：补充 CLI 双语错误输出`
-68. `feat：补充 GitHub CI 模式切换参数`
-69. `feat：补充本地差异与 CI 差异统一接口`
-70. `feat：补充 replay 一致性检查器`
-71. `feat：补充最小验收包导出器`
-72. `feat：补充固定通过场景夹具`
-73. `feat：补充固定拒绝场景夹具`
-74. `feat：补充固定补齐后重试场景夹具`
-75. `feat：补充固定人工审批场景夹具`
-76. `feat：补充模板合法性单元测试`
-77. `feat：补充任务合法性单元测试`
-78. `feat：补充路径组展开单元测试`
-79. `feat：补充补丁解析单元测试`
-80. `feat：补充范围检查单元测试`
-81. `feat：补充风险路径单元测试`
-82. `feat：补充文件类型单元测试`
-83. `feat：补充材料检查单元测试`
-84. `feat：补充结论构建单元测试`
-85. `feat：补充本地流程集成测试`
-86. `feat：补充 CI 流程集成测试`
-87. `feat：补充回放流程集成测试`
-88. `feat：补充验收包流程集成测试`
-89. `feat：补充 GitHub Actions 云端复核工作流`
-90. `feat：补充验收矩阵与项目说明文档`
+1. `feat：check 增加双语放行结论视图`
+2. `feat：gate-result 写入中文违规说明`
+3. `feat：task 支持路径组领域对象`
+4. `feat：check 引入材料结果结构模型`
+5. `feat：report 增加审计事件对象`
+6. `feat：replay 保存运行快照模型`
+7. `feat：init 生成模板规则领域对象`
+8. `feat：task 固化当前任务领域结构`
+9. `feat：check 合并生效任务约束对象`
+10. `feat：ci 模式接入 GitHub 环境上下文`
+11. `feat：validate 校验 YAML 结构字段`
+12. `feat：task 展开路径组为具体目录`
+13. `feat：validate 拦截不存在的路径组引用`
+14. `feat：validate 识别非法 glob 路径模式`
+15. `feat：validate 检查模板文件名与任务类型一致`
+16. `feat：validate 拦截允许路径与禁止路径冲突`
+17. `feat：task 拦截空目标组与空目标路径`
+18. `feat：validate 禁止当前任务放宽仓库红线`
+19. `feat：check 解析 patch.diff 变更文件`
+20. `feat：check 读取 git add 后的暂存区差异`
+21. `feat：ci 模式读取 PR 补丁输入`
+22. `feat：ci 模式识别 GitHub Actions 运行环境`
+23. `feat：check 归一化变更文件路径`
+24. `feat：check 统计本次改动文件数量`
+25. `feat：check 拒绝超出任务范围的文件修改`
+26. `feat：check 校验任务目标区域是否真正命中`
+27. `feat：check 拦截超过模板上限的大改动`
+28. `feat：check 拒绝触碰 security 与 infra 目录`
+29. `feat：check 将高风险目录升级为人工审批`
+30. `feat：check 校验模板允许的文件后缀`
+31. `feat：check 识别敏感文件名模式`
+32. `feat：check 阻止真实 .env 文件入库`
+33. `feat：check 拦截压缩包与二进制产物`
+34. `feat：check 校验必需材料是否存在`
+35. `feat：check 识别空白测试报告与空白说明文件`
+36. `feat：check 校验 JSON 材料的基本结构`
+37. `feat：check 校验 Markdown 材料正文完整性`
+38. `feat：feature-change 模板要求测试与审查材料`
+39. `feat：bug-fix 模板要求缺陷背景与测试证明`
+40. `feat：api-change 模板要求接口说明文件`
+41. `feat：config-change 模板要求配置影响说明`
+42. `feat：test-addition 模板要求覆盖率材料`
+43. `feat：check 按优先级生成正式门禁结论`
+44. `feat：report 输出中文终端摘要`
+45. `feat：report 生成 Markdown 门禁报告`
+46. `feat：check 落盘 gate-result 结构化结果`
+47. `feat：check 导出 checked-files 检查清单`
+48. `feat：check 记录 events 审计日志`
+49. `feat：check 归档 task snapshot 任务快照`
+50. `feat：local 模式写入 out/local/latest`
+51. `feat：ci 模式写入 out/ci/latest`
+52. `feat：init 初始化仓库级红线规则`
+53. `feat：init 一次性生成五类任务模板`
+54. `feat：init 生成当前任务空白样例`
+55. `feat：task 交互式创建功能变更任务`
+56. `feat：task 基于路径组快速选定目标范围`
+57. `feat：validate 命令输出配置校验结果`
+58. `feat：check 命令串联完整门禁主链路`
+59. `feat：report 命令读取最近一次检查结果`
+60. `feat：replay 命令回放最近一次门禁结论`
+61. `feat：doctor 命令诊断仓库接入状态`
+62. `feat：pack 命令导出最小验收包`
+63. `feat：CLI 新增 validate 子命令入口`
+64. `feat：CLI 新增 replay 子命令入口`
+65. `feat：CLI 新增 doctor 子命令入口`
+66. `feat：CLI 新增 pack 子命令入口`
+67. `feat：CLI 错误输出切换为中英双语`
+68. `feat：check 支持 --mode ci 参数切换`
+69. `feat：统一本地与云端差异读取接口`
+70. `feat：replay 校验历史结果可复现性`
+71. `feat：pack 导出固定输入与固定输出文件`
+72. `feat：tests 提供允许放行的标准场景夹具`
+73. `feat：tests 提供拒绝放行的标准场景夹具`
+74. `feat：tests 提供补齐后重试的标准场景夹具`
+75. `feat：tests 提供人工审批的标准场景夹具`
+76. `feat：tests 覆盖模板合法性校验`
+77. `feat：tests 覆盖当前任务合法性校验`
+78. `feat：tests 覆盖路径组展开逻辑`
+79. `feat：tests 覆盖补丁解析与文件提取`
+80. `feat：tests 覆盖范围越界与规模超限判断`
+81. `feat：tests 覆盖风险路径与审批路径判断`
+82. `feat：tests 覆盖文件类型与敏感文件拦截`
+83. `feat：tests 覆盖材料缺失与材料无效判断`
+84. `feat：tests 覆盖正式结论优先级构建`
+85. `feat：tests 跑通本地提交流程集成用例`
+86. `feat：tests 跑通 GitHub CI 流程集成用例`
+87. `feat：tests 跑通回放命令集成用例`
+88. `feat：tests 跑通验收包导出集成用例`
+89. `feat：ci 接入 GitHub Actions 云端复核工作流`
+90. `feat：docs 增加验收矩阵与命令说明`
 
 ## Task 1: 拆分领域模型与双语结论对象
 
