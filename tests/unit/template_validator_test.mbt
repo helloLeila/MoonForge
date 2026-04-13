@@ -18,5 +18,41 @@ test "template validator rejects file name mismatch" {
   let result = @checkers.validate_template_semantics(
     "feature-change.yml", template,
   )
-  assert_true(result is Err(_))
+  assert_eq(result, Err("CONFIG_SCHEMA_INVALID"))
+}
+
+///|
+/// 模板校验器应拒绝非法的改动文件上限，并保留成功路径。
+test "template validator rejects nonpositive max changed files" {
+  let template = @domain.TaskTemplate::{
+    task_type: "feature-change",
+    allowed_paths: ["src/**"],
+    forbidden_paths: [],
+    allowed_extensions: [".mbt"],
+    required_artifacts: ["test-report.json"],
+    max_changed_files: 0,
+    manual_approval_paths: [],
+  }
+  let result = @checkers.validate_template_semantics(
+    "feature-change.yml", template,
+  )
+  assert_eq(result, Err("RULE_SEMANTIC_INVALID"))
+}
+
+///|
+/// 模板校验器应接受文件名匹配且规则值有效的模板。
+test "template validator accepts valid template" {
+  let template = @domain.TaskTemplate::{
+    task_type: "feature-change",
+    allowed_paths: ["src/**"],
+    forbidden_paths: [],
+    allowed_extensions: [".mbt"],
+    required_artifacts: ["test-report.json"],
+    max_changed_files: 8,
+    manual_approval_paths: [],
+  }
+  let result = @checkers.validate_template_semantics(
+    "feature-change.yml", template,
+  )
+  assert_eq(result, Ok(()))
 }

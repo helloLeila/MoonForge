@@ -9,7 +9,7 @@
 pub fn validate_current_task(
   task : @domain.CurrentTask,
 ) -> Result[Unit, String] {
-  if task.task_type == "" || task.title == "" {
+  if task.task_type.trim() == "" || task.title.trim() == "" {
     Err("TASK_FILE_INVALID")
   } else if task.target_groups.is_empty() && task.target_paths.is_empty() {
     Err("TASK_SCOPE_INVALID")
