@@ -524,6 +524,10 @@ pub fn create_task(
   paths_csv : String,
 ) -> @domain.CurrentTask raise {
   let repo_rules = load_repo_rules(repo_root)
+  match validate_task_type(task_type) {
+    Ok(_) => ()
+    Err(code) => raise Failure::Failure(code)
+  }
   let template = load_template(repo_root, task_type)
   let (target_groups, target_paths) = split_task_targets(paths_csv)
   if title.trim() == "" {

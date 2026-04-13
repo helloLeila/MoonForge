@@ -86,3 +86,21 @@ test "create task writes target groups when group selected" {
   assert_true(content.contains("target_groups"))
   assert_true(content.contains("frontend_pages"))
 }
+
+///|
+/// create_task 应拒绝未知任务类型，并返回稳定错误码。
+test "create task rejects unknown task type" {
+  let repo = unique_init_dir("unknown-type")
+  ignore(@services.init_repo(repo))
+
+  try {
+    ignore(
+      @services.create_task(
+        repo, "unknown-type", "Add grouped filter", "@frontend_pages",
+      ),
+    )
+    panic()
+  } catch {
+    err => assert_true(err.to_string().contains("TASK_TYPE_UNKNOWN"))
+  }
+}
