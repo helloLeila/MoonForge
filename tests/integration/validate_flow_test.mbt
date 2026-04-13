@@ -354,3 +354,41 @@ test "validate fails when inactive template semantics invalid" {
   let result = @services.validate_repo(repo)
   assert_true(result is Err(_))
 }
+
+///|
+/// validate_repo 应校验 task-types 目录下额外新增的模板文件。
+test "validate fails when custom template semantics invalid" {
+  let repo = unique_validate_dir("custom-template")
+  let invalid_template =
+    #|task_type: custom-review
+    #|
+    #|allowed_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+    #|forbidden_paths:
+    #|  - "frontend/src/pages/**"
+    #|
+    #|allowed_extensions:
+    #|  - ".ts"
+    #|
+    #|required_artifacts:
+    #|  - "review.md"
+    #|
+    #|max_changed_files: 8
+    #|
+    #|manual_approval_paths:
+    #|  - "backend/src/main/java/**/service/high-risk/**"
+    #|
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.create_task(
+      repo, "feature-change", "Add filter", "frontend/src/pages/**",
+    ),
+  )
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/task-types/custom-review.yml"),
+    invalid_template,
+  )
+  let result = @services.validate_repo(repo)
+  assert_true(result is Err(_))
+}

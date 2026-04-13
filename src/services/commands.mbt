@@ -109,19 +109,36 @@ fn validate_all_templates(
   repo_root : String,
   errors : Array[String],
 ) -> Unit {
+  let template_names : Array[String] = []
   for seed in default_templates() {
+    template_names.push(seed.name)
+  }
+  try {
+    for file_name in @infra.list_dir(task_types_dir(repo_root)) {
+      if file_name.has_suffix(".yml") {
+        let task_type = file_name[0:file_name.length() - 4].to_string()
+        if !template_names.contains(task_type) {
+          template_names.push(task_type)
+        }
+      }
+    }
+  } catch {
+    err => errors.push("任务模板目录非法：\{err.to_string()}")
+  }
+
+  for template_name in template_names {
     try {
-      let template = load_template(repo_root, seed.name)
+      let template = load_template(repo_root, template_name)
       match
         @checkers.validate_template_semantics(
-          @infra.template_yaml_file_name(seed.name),
+          @infra.template_yaml_file_name(template_name),
           template,
         ) {
         Ok(_) => ()
-        Err(code) => errors.push("任务模板文件非法：\{seed.name}: \{code}")
+        Err(code) => errors.push("任务模板文件非法：\{template_name}: \{code}")
       }
     } catch {
-      err => errors.push("任务模板文件非法：\{seed.name}: \{err.to_string()}")
+      err => errors.push("任务模板文件非法：\{template_name}: \{err.to_string()}")
     }
   }
 }
