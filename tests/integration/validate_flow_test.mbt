@@ -59,7 +59,10 @@ test "validate fails when repo rules missing required field" {
       repo, "feature-change", "Add filter", "frontend/src/pages/**",
     ),
   )
-  @infra.write_text(@infra.join_path(repo, ".moonforge/repo-rules.yml"), invalid_rules)
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/repo-rules.yml"),
+    invalid_rules,
+  )
   let result = @services.validate_repo(repo)
   assert_true(result is Err(_))
 }
@@ -88,7 +91,10 @@ test "validate fails when repo rules yaml invalid" {
       repo, "feature-change", "Add filter", "frontend/src/pages/**",
     ),
   )
-  @infra.write_text(@infra.join_path(repo, ".moonforge/repo-rules.yml"), invalid_rules)
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/repo-rules.yml"),
+    invalid_rules,
+  )
   let result = @services.validate_repo(repo)
   assert_true(result is Err(_))
 }
