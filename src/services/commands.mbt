@@ -492,12 +492,7 @@ pub fn init_repo(repo_root : String) -> String raise {
   }
   @infra.write_text(
     current_task_path(repo_root),
-    render_current_task(@domain.CurrentTask::{
-      task_type: "feature-change",
-      title: "replace-me",
-      target_groups: [],
-      target_paths: ["frontend/src/pages/**"],
-    }),
+    blank_current_task_template(),
   )
   "Initialized MoonForge Gate config in \{moonforge_dir}"
 }

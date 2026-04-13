@@ -47,5 +47,5 @@ pub fn repo_rules_header() -> String {
 ///|
 /// 生成空白当前任务文件的初始化模板文本，引导开发者填写。
 pub fn blank_current_task_template() -> String {
-  "# 请填写当前任务信息\ntask_type: \"\"\ntitle: \"\"\ntarget_paths:\n  - \"\"\n"
+  "# 请填写当前任务信息\ntask_type: \"\"\ntitle: \"\"\ntarget_groups:\n  - \"\"\n\ntarget_paths:\n  - \"\"\n"
 }

@@ -45,6 +45,12 @@ test "init creates repo rules and five templates" {
       @infra.join_path(repo, ".moonforge/task-types/test-addition.yml"),
     ),
   )
+  let current_task = @infra.read_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+  )
+  assert_true(current_task.contains("task_type: \"\""))
+  assert_true(current_task.contains("target_groups"))
+  assert_true(current_task.contains("target_paths"))
 }
 
 ///|
