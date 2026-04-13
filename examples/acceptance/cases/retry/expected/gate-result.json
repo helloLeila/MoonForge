@@ -1,0 +1,14 @@
+{
+  "run_id": "run-retry",
+  "decision": "Retryable",
+  "decision_summary": "补齐后重试",
+  "violations": [
+    {
+      "code": "MISSING_ARTIFACT",
+      "file": "preview-report.json",
+      "detail": "缺少模板要求的材料文件",
+      "suggestion": "补齐 preview-report.json 后重新执行检查"
+    }
+  ],
+  "next_action": "补齐材料后重新执行检查"
+}
