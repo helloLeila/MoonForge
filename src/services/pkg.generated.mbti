@@ -6,15 +6,37 @@ import {
 }
 
 // Values
+pub fn all_task_type_names() -> Array[String]
+
+pub fn api_change_template_header() -> String
+
+pub fn blank_current_task_template() -> String
+
+pub fn bug_fix_template_header() -> String
+
+pub fn config_change_template_header() -> String
+
 pub fn create_task(String, String, String, String) -> @domain.CurrentTask raise
 
+pub fn feature_change_template_header() -> String
+
 pub fn init_repo(String) -> String raise
+
+pub fn parse_target_paths(String) -> Array[String]
+
+pub fn render_current_task_yaml(String, String, Array[String]) -> String
+
+pub fn repo_rules_header() -> String
 
 pub fn report_latest(String, mode? : String) -> String raise
 
 pub fn run_check(String, String, mode? : String) -> @domain.CheckResult raise
 
 pub fn summarize_result(@domain.CheckResult) -> String
+
+pub fn test_addition_template_header() -> String
+
+pub fn validate_task_type(String) -> Result[Unit, String]
 
 // Errors
 
