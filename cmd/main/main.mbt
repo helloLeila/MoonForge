@@ -104,6 +104,23 @@ fn cli() -> @argparse.Command {
           ]),
         ],
       ),
+      @argparse.Command(
+        "acc",
+        about="Run internal acceptance cases",
+        arg_required_else_help=true,
+        subcommand_required=true,
+        subcommands=[
+          @argparse.Command("pass", about="Run the fixed pass acceptance case"),
+          @argparse.Command(
+            "retry",
+            about="Run the fixed retry acceptance case",
+          ),
+          @argparse.Command(
+            "reject",
+            about="Run the fixed reject acceptance case",
+          ),
+        ],
+      ),
     ],
   )
 }
@@ -173,6 +190,14 @@ fn main {
             mode=option_value(child, "mode"),
           ),
         )
+      "acc" => {
+        guard child.subcommand is Some((acc_case, _)) else {
+          raise Failure::Failure("Missing acceptance case")
+        }
+        println(
+          @services.dispatch_cli_command(name, "", acceptance_case=acc_case),
+        )
+      }
       _ => raise Failure::Failure("Unsupported subcommand: \{name}")
     }
   } catch {
