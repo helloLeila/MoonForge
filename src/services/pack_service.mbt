@@ -36,6 +36,80 @@ pub fn calculate_total_size(file_sizes : Array[Int]) -> Int {
 }
 
 ///|
+/// 统计导出文件里不同类型的文件数量。
+/// 入参：`exported_files`，已经加入验收包的相对路径数组。
+/// 入参：`prefix`，需要统计的路径前缀。
+/// 出参：匹配该前缀的文件数量。
+pub fn count_files_with_prefix(
+  exported_files : Array[String],
+  prefix : String,
+) -> Int {
+  let mut count = 0
+  for file in exported_files {
+    if file.has_prefix(prefix) {
+      count = count + 1
+    }
+  }
+  count
+}
+
+///|
+/// 构造验收包清单对象，记录导出模式、运行结论和文件分布。
+/// 入参：`mode`，导出时对应的运行模式。
+/// 入参：`run_id`，最近一次运行编号。
+/// 入参：`decision`，最近一次运行结论。
+/// 入参：`context_summary`，最近一次运行的来源摘要。
+/// 入参：`exported_files`，已经加入验收包的相对路径数组。
+/// 出参：可直接写入 `pack-manifest.json` 的结构化对象。
+pub fn build_pack_manifest(
+  mode : String,
+  run_id : String,
+  decision : String,
+  context_summary : String,
+  exported_files : Array[String],
+) -> @domain.PackManifestFile {
+  let acceptance_file_count = count_files_with_prefix(exported_files, "acceptance/")
+  @domain.PackManifestFile::{
+    mode,
+    run_id,
+    decision,
+    context_summary,
+    exported_files,
+    input_file_count: exported_files.filter(fn(file) {
+      file == "repo-rules.yml" || file == "current-task.yml"
+    }).length(),
+    result_file_count: exported_files.filter(fn(file) {
+      !file.has_prefix("acceptance/") &&
+      file != "repo-rules.yml" &&
+      file != "current-task.yml" &&
+      file != "pack-manifest.json" &&
+      file != "pack-summary.md"
+    }).length(),
+    acceptance_file_count,
+  }
+}
+
+///|
+/// 渲染验收包摘要说明，方便人工快速查看包内重点内容。
+/// 入参：`manifest`，已经统计好的验收包清单对象。
+/// 出参：可直接写入 `pack-summary.md` 的 Markdown 文本。
+pub fn render_pack_summary(manifest : @domain.PackManifestFile) -> String {
+  [
+    "# MoonForge 验收包摘要",
+    "",
+    "- 模式：\{manifest.mode}",
+    "- 运行编号：\{manifest.run_id}",
+    "- 结论：\{manifest.decision}",
+    "- 来源：\{manifest.context_summary}",
+    "- 固定输入文件数：\{manifest.input_file_count}",
+    "- 最近运行结果文件数：\{manifest.result_file_count}",
+    "- 内置验收夹具文件数：\{manifest.acceptance_file_count}",
+    "- 总文件数：\{manifest.exported_files.length()}",
+  ].join("\n") +
+  "\n"
+}
+
+///|
 /// 渲染打包成功的终端提示文本。
 /// 入参：`archive_path`，生成的压缩包完整路径。
 /// 入参：`file_count`，打包的文件数量。
