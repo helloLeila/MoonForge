@@ -41,15 +41,17 @@
 
 | 命令 | 主要结果物 | 说明 |
 | --- | --- | --- |
+| `moonforge init` | `.moonforge/repo-rules.yml`、`.moonforge/task-types/*.yml`、`.moonforge/current-task.yml` | 初始化仓库治理配置与空白任务样例 |
+| `moonforge task` | `.moonforge/current-task.yml` | 生成当前任务边界，支持路径组与自定义模板 |
 | `moonforge validate` | 终端校验摘要 | 面向接入前检查 |
 | `moonforge check` | `gate-result.json`、`scope-result.json`、`artifact-result.json`、`checked-files.txt`、`events.jsonl`、`gate-report.md` | 门禁主链路 |
 | `moonforge report` | 终端中文摘要 | 读取最近一次检查结果 |
 | `moonforge replay` | 终端回放摘要 | 读取运行快照中的任务信息 |
-| `moonforge pack` | `.moonforge/out/<mode>/packs/latest/` | 导出最小验收包 |
+| `moonforge pack` | `.moonforge/out/<mode>/packs/latest/` | 导出最小验收包目录，归档文件仍待补齐 |
 | `moonforge doctor` | 终端诊断摘要 | 检查接入状态与配置健康度 |
 
 ## 当前缺口提示
 
-- `validate` 的语义校验仍偏轻，后续要继续对齐设计文档中的模板语义非法场景。
-- `pack` 当前导出的是固定文件目录，还没有真正压成归档包。
-- GitHub Actions 云端复核工作流仍待补齐到仓库。
+- `validate` 已覆盖空白样例、自定义模板、未知任务类型与多类 YAML/语义错误；剩余待补是更深层的模板规则语义与非法 glob 模式。
+- `pack` 当前导出的是固定文件目录，还没有真正压成 `.tar.gz` 归档包。
+- GitHub Actions 已有基础工作流，但还缺显式的 `validate` / `check --mode ci` 执行面与对应的独立集成测试。
