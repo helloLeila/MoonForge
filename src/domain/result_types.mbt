@@ -21,6 +21,35 @@ pub(all) struct ViolationView {
 } derive(Debug)
 
 ///|
+/// 根据领域违规项生成对外展示视图，并把稳定文案集中到一个转换入口。
+/// 入参：`violation`，表示门禁引擎产生的一条结构化违规项。
+/// 出参：`ViolationView`，用于上层报告与测试读取中英文展示字段。
+pub fn ViolationView::from_violation(violation : Violation) -> ViolationView {
+  ViolationView::{
+    code: violation.code,
+    text_zh: violation.detail,
+    text_en: violation_code_text_en(violation.code),
+    action_zh: violation.suggestion,
+  }
+}
+
+///|
+/// 根据违规码返回对外展示的英文说明，作为转换入口中的唯一英文来源。
+/// 入参：`code`，表示结构化违规项的编码。
+/// 出参：与编码对应的英文说明，未知编码则原样返回编码本身。
+fn violation_code_text_en(code : String) -> String {
+  match code {
+    "PATH_OUT_OF_SCOPE" => "path out of scope"
+    "PROTECTED_PATH_TOUCHED" => "protected path touched"
+    "FORBIDDEN_EXTENSION" => "forbidden extension"
+    "CHANGED_FILE_COUNT_EXCEEDED" => "changed file count exceeded"
+    "MISSING_ARTIFACT" => "missing artifact"
+    "MANUAL_APPROVAL_REQUIRED" => "manual approval required"
+    _ => code
+  }
+}
+
+///|
 /// 一次完整门禁检查的内存结果对象。
 pub(all) struct CheckResult {
   run_id : String
