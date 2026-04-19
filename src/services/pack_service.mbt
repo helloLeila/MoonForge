@@ -68,23 +68,27 @@ pub fn build_pack_manifest(
   context_summary : String,
   exported_files : Array[String],
 ) -> @domain.PackManifestFile {
-  let acceptance_file_count = count_files_with_prefix(exported_files, "acceptance/")
+  let acceptance_file_count = count_files_with_prefix(
+    exported_files, "acceptance/",
+  )
   @domain.PackManifestFile::{
     mode,
     run_id,
     decision,
     context_summary,
     exported_files,
-    input_file_count: exported_files.filter(fn(file) {
-      file == "repo-rules.yml" || file == "current-task.yml"
-    }).length(),
-    result_file_count: exported_files.filter(fn(file) {
+    input_file_count: exported_files
+    .filter(fn(file) { file == "repo-rules.yml" || file == "current-task.yml" })
+    .length(),
+    result_file_count: exported_files
+    .filter(fn(file) {
       !file.has_prefix("acceptance/") &&
       file != "repo-rules.yml" &&
       file != "current-task.yml" &&
       file != "pack-manifest.json" &&
       file != "pack-summary.md"
-    }).length(),
+    })
+    .length(),
     acceptance_file_count,
   }
 }

@@ -63,7 +63,10 @@ pub fn render_replay_summary(
   context_summary : String,
   metrics_summary : String,
 ) -> String {
-  let details : Array[String] = ["任务类型：\{task_type}", "结论：\{decision_label}"]
+  let details : Array[String] = [
+    "任务类型：\{task_type}",
+    "结论：\{decision_label}",
+  ]
   if context_summary.trim() != "" {
     details.push("来源：\{context_summary}")
   }

@@ -72,72 +72,63 @@ test "pack latest exports fixed input and output files" {
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/current.yml",
+        repo, ".moonforge/out/local/packs/latest/acceptance/current.yml",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/matrix.md",
+        repo, ".moonforge/out/local/packs/latest/acceptance/matrix.md",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/.moonforge/repo-rules.yml",
+        repo, ".moonforge/out/local/packs/latest/acceptance/.moonforge/repo-rules.yml",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/.moonforge/task-types/homepage-links.yml",
+        repo, ".moonforge/out/local/packs/latest/acceptance/.moonforge/task-types/homepage-links.yml",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/.moonforge/current-task.yml",
+        repo, ".moonforge/out/local/packs/latest/acceptance/.moonforge/current-task.yml",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/react-homepage-fixture/src/components/WorkLinks.jsx",
+        repo, ".moonforge/out/local/packs/latest/acceptance/react-homepage-fixture/src/components/WorkLinks.jsx",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/cases/pass/expected/gate-result.json",
+        repo, ".moonforge/out/local/packs/latest/acceptance/cases/pass/expected/gate-result.json",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/cases/retry/patch.diff",
+        repo, ".moonforge/out/local/packs/latest/acceptance/cases/retry/patch.diff",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/cases/reject/expected/gate-report.md",
+        repo, ".moonforge/out/local/packs/latest/acceptance/cases/reject/expected/gate-report.md",
       ),
     ),
   )

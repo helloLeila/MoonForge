@@ -8,7 +8,10 @@ pub fn extract_json_string_field(
   field_name : String,
 ) -> String? {
   let prefix = "\"\{field_name}\""
-  let lines = json_text.split("\n").map(line => line.trim().to_string()).collect()
+  let lines = json_text
+    .split("\n")
+    .map(line => line.trim().to_string())
+    .collect()
   for line in lines {
     if line.has_prefix(prefix) {
       let parts = line.split(":").map(part => part.trim().to_string()).collect()

@@ -627,10 +627,7 @@ test "pr mode writes run context and report summary" {
 
     let result = @services.run_check(repo_root, run_dir, mode="pr")
     let context_text = @infra.read_text(
-      @infra.join_path(
-        repo_root,
-        ".moonforge/out/pr/latest/run-context.json",
-      ),
+      @infra.join_path(repo_root, ".moonforge/out/pr/latest/run-context.json"),
     )
     let summary = @services.report_summary(repo_root, mode="pr")
 

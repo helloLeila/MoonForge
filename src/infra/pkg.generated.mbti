@@ -2,11 +2,16 @@
 package "leila/moonforge_gate/src/infra"
 
 import {
+  "leila/moonforge_gate/src/domain",
   "moonbitlang/core/debug",
 }
 
 // Values
 pub fn basename(String) -> String
+
+pub fn bootstrap_dir(String) -> String
+
+pub fn check_preferences_path(String) -> String
 
 pub fn dirname(String) -> String
 
@@ -30,17 +35,29 @@ pub fn match_glob(String, String) -> Bool
 
 pub fn matches_any(String, Array[String]) -> Bool
 
+pub fn material_catalog_path(String) -> String
+
 pub fn normalize_path(String) -> String
 
 pub fn parse_changed_files(String) -> Array[String]
 
 pub fn parse_flat_yaml(String) -> FlatYaml raise
 
+pub fn parse_run_history_index(String) -> @domain.RunHistoryIndex raise
+
+pub fn parse_run_history_record(String) -> @domain.RunHistoryRecord raise
+
 pub fn path_exists(String) -> Bool raise
 
 pub fn pre_commit_hook_required_markers() -> Array[String]
 
+pub fn read_check_preferences(String) -> @domain.CheckPreferences raise
+
+pub fn read_current_branch(String) -> String raise
+
 pub fn read_flat_yaml(String) -> FlatYaml raise
+
+pub fn read_git_project_snapshot(String) -> @domain.GitProjectSnapshot
 
 pub fn read_latest_artifact_result(String, String) -> String? raise
 
@@ -50,6 +67,12 @@ pub fn read_latest_run_context(String, String) -> String? raise
 
 pub fn read_latest_scope_result(String, String) -> String? raise
 
+pub fn read_material_catalog(String) -> @domain.MaterialCatalog raise
+
+pub fn read_report_preferences(String) -> @domain.ReportPreferences raise
+
+pub fn read_run_history_index(String) -> @domain.RunHistoryIndex raise
+
 pub fn read_snapshot_artifact_result(String, String) -> String? raise
 
 pub fn read_snapshot_gate_result(String, String) -> String? raise
@@ -58,31 +81,75 @@ pub fn read_snapshot_run_context(String, String) -> String? raise
 
 pub fn read_snapshot_scope_result(String, String) -> String? raise
 
+pub fn read_staged_diff(String) -> String raise
+
+pub fn read_staged_files(String) -> Array[String] raise
+
+pub fn read_status_entries(String) -> Array[@domain.GitStatusEntry] raise
+
+pub fn read_task_defaults(String) -> @domain.TaskDefaults raise
+
 pub fn read_text(String) -> String raise
 
 pub fn read_text_if_exists(String) -> String? raise
 
+pub fn read_unstaged_files(String) -> Array[String] raise
+
+pub fn read_untracked_files(String) -> Array[String] raise
+
+pub fn remove_file_if_exists(String) -> Unit raise
+
+pub fn render_check_preferences(@domain.CheckPreferences) -> String
+
 pub fn render_gate_report(String, String, String, String, String, Int, Array[String]) -> String
+
+pub fn render_material_catalog(@domain.MaterialCatalog) -> String
 
 pub fn render_pre_commit_hook() -> String
 
+pub fn render_report_preferences(@domain.ReportPreferences) -> String
+
+pub fn render_run_history_index(@domain.RunHistoryIndex) -> String
+
+pub fn render_run_history_record(@domain.RunHistoryRecord) -> String
+
+pub fn render_task_defaults(@domain.TaskDefaults) -> String
+
 pub fn render_terminal_summary(String, String, Int) -> String
 
+pub fn report_preferences_path(String) -> String
+
+pub fn resolve_git_repo_root(String) -> String raise
+
+pub fn run_history_dir(String) -> String
+
+pub fn run_history_index_path(String) -> String
+
+pub fn run_shell_capture(String, String) -> @domain.ProcessCapture raise
+
 pub fn run_shell_command(String, String) -> Int raise
+
+pub fn shell_quote(String) -> String
 
 pub fn snapshot_run_dir(String, String) -> String
 
 pub fn split_path(String) -> Array[String]
 
+pub fn task_defaults_path(String) -> String
+
 pub fn template_yaml_file_name(String) -> String
 
 pub fn unique_strings(Array[String]) -> Array[String]
+
+pub fn unique_temp_name(String) -> String
 
 pub fn write_checked_files(String, Array[String]) -> Unit raise
 
 pub fn[T : ToJson] write_json_artifact(String, T) -> Unit raise
 
 pub fn write_jsonl(String, Array[String]) -> Unit raise
+
+pub fn write_run_history_index(String, @domain.RunHistoryIndex) -> Unit raise
 
 pub fn write_text(String, String) -> Unit raise
 
@@ -96,6 +163,7 @@ pub struct FlatYaml {
 pub fn FlatYaml::get_list(Self, String) -> Array[String]
 pub fn FlatYaml::get_lists_with_prefix(Self, String) -> Map[String, Array[String]]
 pub fn FlatYaml::get_scalar(Self, String) -> String?
+pub fn FlatYaml::get_scalars_with_prefix(Self, String) -> Map[String, String]
 
 // Type aliases
 

@@ -57,8 +57,7 @@ test "render_doctor_report shows healthy when no issues" {
 /// 应能报告 pre-commit hook 缺失，避免仓库只初始化规则却没有接通提交前门禁。
 test "diagnose_pre_commit_hook reports missing hook" {
   let issues = @services.diagnose_pre_commit_hook(
-    "/repo/.git/hooks/pre-commit",
-    false,
+    "/repo/.git/hooks/pre-commit", false,
   )
   assert_eq(issues.length(), 1)
   assert_true(issues[0].contains("pre-commit"))

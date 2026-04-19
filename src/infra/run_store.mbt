@@ -103,7 +103,10 @@ pub fn read_snapshot_gate_result(
   repo_root : String,
   run_id : String,
 ) -> String? raise {
-  let path = join_path(snapshot_run_dir(repo_root, run_id), "gate.snapshot.json")
+  let path = join_path(
+    snapshot_run_dir(repo_root, run_id),
+    "gate.snapshot.json",
+  )
   read_text_if_exists(path)
 }
 
@@ -113,7 +116,10 @@ pub fn read_snapshot_scope_result(
   repo_root : String,
   run_id : String,
 ) -> String? raise {
-  let path = join_path(snapshot_run_dir(repo_root, run_id), "scope.snapshot.json")
+  let path = join_path(
+    snapshot_run_dir(repo_root, run_id),
+    "scope.snapshot.json",
+  )
   read_text_if_exists(path)
 }
 
@@ -136,6 +142,9 @@ pub fn read_snapshot_run_context(
   repo_root : String,
   run_id : String,
 ) -> String? raise {
-  let path = join_path(snapshot_run_dir(repo_root, run_id), "run-context.snapshot.json")
+  let path = join_path(
+    snapshot_run_dir(repo_root, run_id),
+    "run-context.snapshot.json",
+  )
   read_text_if_exists(path)
 }

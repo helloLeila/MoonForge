@@ -61,64 +61,56 @@ test "pack command exports latest acceptance files" {
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/current.yml",
+        repo, ".moonforge/out/local/packs/latest/acceptance/current.yml",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/matrix.md",
+        repo, ".moonforge/out/local/packs/latest/acceptance/matrix.md",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/.moonforge/repo-rules.yml",
+        repo, ".moonforge/out/local/packs/latest/acceptance/.moonforge/repo-rules.yml",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/.moonforge/current-task.yml",
+        repo, ".moonforge/out/local/packs/latest/acceptance/.moonforge/current-task.yml",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/cases/pass/patch.diff",
+        repo, ".moonforge/out/local/packs/latest/acceptance/cases/pass/patch.diff",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/cases/retry/expected/gate-result.json",
+        repo, ".moonforge/out/local/packs/latest/acceptance/cases/retry/expected/gate-result.json",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/acceptance/cases/reject/expected/gate-report.md",
+        repo, ".moonforge/out/local/packs/latest/acceptance/cases/reject/expected/gate-report.md",
       ),
     ),
   )
   assert_true(
     @infra.path_exists(
       @infra.join_path(
-        repo,
-        ".moonforge/out/local/packs/latest/pack-manifest.json",
+        repo, ".moonforge/out/local/packs/latest/pack-manifest.json",
       ),
     ),
   )

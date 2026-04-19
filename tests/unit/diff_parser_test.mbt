@@ -107,7 +107,9 @@ test "pr diff adapter requires pull request metadata" {
   }
 
   assert_eq(@adapters.normalize_mode("pr"), "pr")
-  assert_true(@adapters.latest_output_dir("/tmp/demo", "pr").contains("/pr/latest"))
+  assert_true(
+    @adapters.latest_output_dir("/tmp/demo", "pr").contains("/pr/latest"),
+  )
 
   try {
     ignore(@adapters.read_pr_diff(missing_pr_env, patch_path))

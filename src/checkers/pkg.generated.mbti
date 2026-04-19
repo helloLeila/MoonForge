@@ -31,6 +31,14 @@ pub fn find_blocklisted_files(String, Array[String]) -> Array[String]
 
 pub fn pick_stricter_limit(Int, Int) -> Int
 
+pub fn review_material_policy(String, @domain.CurrentTask, Array[String], @domain.MaterialDiscoveryResult) -> MaterialPolicyReview
+
+pub fn review_run_consistency(Array[String], Array[String]) -> RunConsistencyReview
+
+pub fn review_task_description(@domain.CurrentTask) -> TaskDescriptionReview
+
+pub fn review_task_focus(@domain.EffectiveTask, Array[String]) -> TaskFocusReview
+
 pub fn validate_current_task(@domain.CurrentTask) -> Result[Unit, String]
 
 pub fn validate_json_artifact(String, Array[String]) -> Result[Unit, String]
@@ -58,16 +66,74 @@ pub(all) struct FileTypeResult {
   generated_artifact_files : Array[String]
 } derive(@debug.Debug)
 
+pub(all) struct MaterialPolicyIssue {
+  code : String
+  severity : String
+  detail : String
+  suggestion : String
+} derive(@debug.Debug)
+
+pub(all) struct MaterialPolicyReview {
+  found_outside_primary_dir : Array[String]
+  alias_matched_artifacts : Array[String]
+  missing_artifacts : Array[String]
+  issues : Array[MaterialPolicyIssue]
+} derive(@debug.Debug)
+pub fn MaterialPolicyReview::summary(Self) -> String
+
 pub(all) struct RiskPathResult {
   protected_files : Array[String]
   approval_files : Array[String]
 } derive(@debug.Debug)
+
+pub(all) struct RunConsistencyIssue {
+  code : String
+  severity : String
+  detail : String
+  suggestion : String
+} derive(@debug.Debug)
+
+pub(all) struct RunConsistencyReview {
+  shared_files : Array[String]
+  task_only_files : Array[String]
+  diff_only_files : Array[String]
+  issues : Array[RunConsistencyIssue]
+} derive(@debug.Debug)
+pub fn RunConsistencyReview::summary(Self) -> String
 
 pub(all) struct ScopeCheckResult {
   out_of_scope_files : Array[String]
   target_paths_hit : Array[String]
   file_count_exceeded : Bool
 } derive(@debug.Debug)
+
+pub(all) struct TaskDescriptionIssue {
+  code : String
+  severity : String
+  detail : String
+  suggestion : String
+} derive(@debug.Debug)
+
+pub(all) struct TaskDescriptionReview {
+  normalized_title : String
+  issues : Array[TaskDescriptionIssue]
+} derive(@debug.Debug)
+pub fn TaskDescriptionReview::summary(Self) -> String
+
+pub(all) struct TaskFocusIssue {
+  code : String
+  severity : String
+  detail : String
+  suggestion : String
+} derive(@debug.Debug)
+
+pub(all) struct TaskFocusReview {
+  matched_files : Array[String]
+  uncovered_files : Array[String]
+  broad_patterns : Array[String]
+  issues : Array[TaskFocusIssue]
+} derive(@debug.Debug)
+pub fn TaskFocusReview::summary(Self) -> String
 
 // Type aliases
 

@@ -85,8 +85,12 @@ pub fn build_effective_task(
     content_blocklist_patterns: @infra.unique_strings(
       repo_rules.content_blocklist_patterns,
     ),
-    required_artifacts: @infra.unique_strings(template.required_artifacts),
-    required_commands: @infra.unique_strings(template.required_commands),
+    required_artifacts: current_task.merged_required_artifacts(
+      template.required_artifacts,
+    ),
+    required_commands: current_task.merged_required_commands(
+      template.required_commands,
+    ),
     max_changed_files,
   }
 }

@@ -14,7 +14,29 @@ pub fn blank_current_task_template() -> String
 
 pub fn bug_fix_template_header() -> String
 
+pub fn build_advisory_section(Array[String]) -> @domain.ReportViewSection
+
+pub fn build_current_task_draft_seed(String, String, String) -> @domain.CurrentTaskDraftSeed
+
+pub fn build_decision_explanation(@domain.CheckResult) -> @domain.DecisionExplanation
+
+pub fn build_output_catalog_view(String) -> @domain.OutputCatalogView
+
+pub fn build_output_walkthrough_view(@domain.TaskProfileView, @domain.RunInputStoryView, @domain.ReportView, @domain.PreflightAdviceBundle, @domain.OutputCatalogView) -> @domain.OutputWalkthroughView
+
 pub fn build_pack_manifest(String, String, String, String, Array[String]) -> @domain.PackManifestFile
+
+pub fn build_preflight_advice_bundle(String, @domain.CurrentTask, @domain.EffectiveTask, Array[String], @domain.MaterialDiscoveryResult) -> @domain.PreflightAdviceBundle
+
+pub fn build_report_view(@domain.CheckResult, String, String, @domain.DecisionExplanation, String, Array[String]) -> @domain.ReportView
+
+pub fn build_run_history_record(@domain.CheckResult, String, String, String) -> @domain.RunHistoryRecord
+
+pub fn build_run_input_story_view(String, String, String, @domain.MaterialDiscoveryResult) -> @domain.RunInputStoryView
+
+pub fn build_task_autofill_plan(@domain.CurrentTaskDraftSeed, @domain.RepoRules, @domain.TaskTemplate, @domain.GitProjectSnapshot, String, task_defaults? : @domain.TaskDefaults) -> @domain.TaskAutoFillPlan raise
+
+pub fn build_task_profile_view(@domain.CurrentTask, @domain.EffectiveTask, Array[String]) -> @domain.TaskProfileView
 
 pub fn calculate_total_size(Array[Int]) -> Int
 
@@ -26,6 +48,16 @@ pub fn count_files_with_prefix(Array[String], String) -> Int
 
 pub fn create_task(String, String, String, String) -> @domain.CurrentTask raise
 
+pub fn default_bootstrap_bundle() -> @domain.BootstrapBundle
+
+pub fn default_check_preferences() -> @domain.CheckPreferences
+
+pub fn default_material_catalog() -> @domain.MaterialCatalog
+
+pub fn default_report_preferences() -> @domain.ReportPreferences
+
+pub fn default_task_defaults() -> @domain.TaskDefaults
+
 pub fn diagnose_empty_files(Array[(String, String)]) -> Array[String]
 
 pub fn diagnose_missing_files(Array[(String, Bool)]) -> Array[String]
@@ -35,6 +67,8 @@ pub fn diagnose_pre_commit_hook(String, Bool, content? : String) -> Array[String
 pub fn diagnose_required_fields(String, Array[String]) -> Array[String]
 
 pub fn diagnose_yaml_syntax(String) -> Array[String]
+
+pub fn discover_required_artifacts(String, @domain.CurrentTask, Array[String]) -> @domain.MaterialDiscoveryResult raise
 
 pub fn dispatch_cli_command(String, String, task_type? : String, title? : String, paths? : String, run? : String, run_id? : String, mode? : String, acceptance_case? : String) -> String raise
 
@@ -52,41 +86,85 @@ pub fn extract_task_type(String) -> String
 
 pub fn feature_change_template_header() -> String
 
+pub fn filter_history_by_task_type(@domain.RunHistoryIndex, String, Int) -> Array[@domain.RunHistoryRecord]
+
 pub fn generate_pack_filename(String) -> String
 
 pub fn init_repo(String) -> String raise
 
 pub fn list_available_snapshots(String) -> Array[String] raise
 
+pub fn load_material_catalog(String) -> @domain.MaterialCatalog raise
+
 pub fn make_run_id(UInt64) -> String
+
+pub fn normalize_requested_repo(String, String) -> String
 
 pub fn pack_latest(String, mode? : String) -> String raise
 
+pub fn parse_target_choices(String) -> Array[@domain.TaskTargetChoice]
+
 pub fn parse_target_paths(String) -> Array[String]
 
+pub fn parse_target_values(String) -> Array[String]
+
+pub fn prepare_local_check_input(String, @domain.CurrentTask, @domain.GitProjectSnapshot) -> @domain.LocalCheckInput raise
+
+pub fn read_current_working_dir() -> String raise
+
+pub fn read_run_history(String) -> @domain.RunHistoryIndex raise
+
 pub fn read_task_snapshot(String, String) -> String? raise
+
+pub fn record_run_history(String, @domain.RunHistoryRecord) -> @domain.RunHistoryIndex raise
 
 pub fn render_check_summary(String, String, Int, Int) -> String
 
 pub fn render_cli_error(String) -> String
 
+pub fn render_current_task_file(@domain.CurrentTask) -> String
+
 pub fn render_current_task_yaml(String, String, Array[String]) -> String
 
+pub fn render_decision_explanation_markdown(@domain.DecisionExplanation) -> String
+
 pub fn render_doctor_report(Array[String]) -> String
+
+pub fn render_history_hint(@domain.RunHistoryIndex) -> String
 
 pub fn render_mode_label(String) -> String
 
 pub fn render_no_result_message(String) -> String
 
+pub fn render_output_catalog_markdown(@domain.OutputCatalogView) -> String
+
+pub fn render_output_catalog_quickstart(@domain.OutputCatalogView) -> String
+
+pub fn render_output_walkthrough_markdown(@domain.OutputWalkthroughView) -> String
+
 pub fn render_pack_failure(String) -> String
+
+pub fn render_pack_run_highlight(@domain.CheckResult, String) -> String
 
 pub fn render_pack_success(String, Int) -> String
 
 pub fn render_pack_summary(@domain.PackManifestFile) -> String
 
+pub fn render_preflight_advice_markdown(@domain.PreflightAdviceBundle) -> String
+
+pub fn render_project_context_summary(@domain.ProjectContext) -> String
+
+pub fn render_recent_history_lines(@domain.RunHistoryIndex, Int) -> Array[String]
+
+pub fn render_replay_detail_lines(@domain.CheckResult, String) -> Array[String]
+
 pub fn render_replay_summary(String, String, String, String, String) -> String
 
 pub fn render_report_summary(String, String, String, String) -> String
+
+pub fn render_report_terminal_summary(@domain.ReportView) -> String
+
+pub fn render_report_view_markdown(@domain.ReportView) -> String
 
 pub fn render_result_metrics_summary(String?, String?) -> String
 
@@ -94,7 +172,15 @@ pub fn render_route_summary(String?, String?, String?) -> String
 
 pub fn render_run_context_summary(String) -> String
 
+pub fn render_run_input_story_markdown(@domain.RunInputStoryView) -> String
+
+pub fn render_run_snapshot_card(@domain.CheckResult, String, String) -> String
+
 pub fn render_snapshot_not_found(String) -> String
+
+pub fn render_task_profile_markdown(@domain.TaskProfileView) -> String
+
+pub fn render_task_type_trend_hint(@domain.RunHistoryIndex, String, Int) -> String
 
 pub fn render_validate_report(Array[String]) -> String
 
@@ -108,6 +194,14 @@ pub fn report_latest(String, mode? : String) -> String raise
 
 pub fn report_summary(String, mode? : String) -> String raise
 
+pub fn resolve_artifact_source_dir(String, @domain.CurrentTask) -> String
+
+pub fn resolve_cli_project_context(String, allow_non_git? : Bool) -> @domain.ProjectContext raise
+
+pub fn resolve_project_context(String, String, allow_non_git? : Bool) -> @domain.ProjectContext raise
+
+pub fn resolve_search_directories(String, @domain.CurrentTask, @domain.MaterialCatalog) -> Array[String]
+
 pub fn run_acceptance_case(String) -> String raise
 
 pub fn run_check(String, String, mode? : String) -> @domain.CheckResult raise
@@ -115,6 +209,8 @@ pub fn run_check(String, String, mode? : String) -> @domain.CheckResult raise
 pub fn should_exit_nonzero(String) -> Bool
 
 pub fn snapshot_exists(String, String) -> Bool raise
+
+pub fn split_target_choices(Array[@domain.TaskTargetChoice]) -> (Array[String], Array[String])
 
 pub fn summarize_result(@domain.CheckResult) -> String
 

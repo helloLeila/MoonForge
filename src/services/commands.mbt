@@ -14,6 +14,19 @@ fn scalar_required(yaml : @infra.FlatYaml, key : String) -> String raise {
 }
 
 ///|
+/// 读取可选标量字段，缺失时返回调用方给定的默认值。
+fn scalar_optional(
+  yaml : @infra.FlatYaml,
+  key : String,
+  default_value : String,
+) -> String {
+  match yaml.get_scalar(key) {
+    Some(value) => value
+    None => default_value
+  }
+}
+
+///|
 /// 将 YAML 中的整数字段解析成 Int，并在失败时补充字段名。
 fn int_required(yaml : @infra.FlatYaml, key : String) -> Int raise {
   @string.parse_int(scalar_required(yaml, key)) catch {
@@ -39,6 +52,37 @@ fn int_optional(yaml : @infra.FlatYaml, key : String) -> Int? raise {
       )
     None => None
   }
+}
+
+///|
+/// 将 YAML 中的可选布尔字段解析成 `Bool?`。
+/// 这里只接受最直接的 `true / false` 两种写法，避免含糊值混进来。
+fn bool_optional(yaml : @infra.FlatYaml, key : String) -> Bool? raise {
+  match yaml.get_scalar(key) {
+    Some(value) =>
+      match value.trim().to_string() {
+        "true" => Some(true)
+        "false" => Some(false)
+        _ =>
+          raise Failure::Failure(
+            "Field \{key} is not a valid boolean: \{value}",
+          )
+      }
+    None => None
+  }
+}
+
+///|
+/// 去掉字符串列表里的空白项，避免 `- ""` 这种占位值混进运行时对象。
+fn cleaned_list(values : Array[String]) -> Array[String] {
+  let cleaned : Array[String] = []
+  for raw_item in values {
+    let item = raw_item.trim().to_string()
+    if item != "" {
+      cleaned.push(item)
+    }
+  }
+  cleaned
 }
 
 ///|
@@ -76,6 +120,18 @@ fn template_path(repo_root : String, task_type : String) -> String {
 /// 返回材料 schema 目录的标准路径。
 fn artifact_schemas_dir(repo_root : String) -> String {
   @infra.join_path(repo_root, ".moonforge/artifact-schemas")
+}
+
+///|
+/// 返回 bootstrap 配置目录的标准路径。
+fn bootstrap_dir(repo_root : String) -> String {
+  @infra.bootstrap_dir(repo_root)
+}
+
+///|
+/// 返回材料目录册文件的标准路径。
+fn material_catalog_path(repo_root : String) -> String {
+  @infra.material_catalog_path(repo_root)
 }
 
 ///|
@@ -212,8 +268,26 @@ fn load_current_task(repo_root : String) -> @domain.CurrentTask raise {
   @domain.CurrentTask::{
     task_type: scalar_required(yaml, "task_type"),
     title: scalar_required(yaml, "title"),
-    target_groups: yaml.get_list("target_groups"),
-    target_paths: yaml.get_list("target_paths"),
+    title_source: scalar_optional(yaml, "title_source", "manual_or_unknown"),
+    target_groups: cleaned_list(yaml.get_list("target_groups")),
+    target_paths: cleaned_list(yaml.get_list("target_paths")),
+    target_path_source: scalar_optional(
+      yaml, "target_path_source", "manual_or_unknown",
+    ),
+    staged_files: cleaned_list(yaml.get_list("staged_files")),
+    required_artifacts: cleaned_list(yaml.get_list("required_artifacts")),
+    required_commands: cleaned_list(yaml.get_list("required_commands")),
+    artifact_dir: scalar_optional(
+      yaml, "artifact_dir", ".moonforge/artifacts/current",
+    ),
+    check_mode: scalar_optional(yaml, "check_mode", "local"),
+    auto_inferred_fields: cleaned_list(yaml.get_list("auto_inferred_fields")),
+    notes: cleaned_list(yaml.get_list("notes")),
+    need_user_review: match bool_optional(yaml, "need_user_review") {
+      Some(value) => value
+      None => false
+    },
+    last_auto_fill_ns: scalar_optional(yaml, "last_auto_fill_ns", ""),
   }
 }
 
@@ -240,6 +314,41 @@ fn load_artifact_required_fields(
     field_map[artifact_name] = required_fields
   }
   field_map
+}
+
+///|
+/// 读取 task 默认偏好；文件不存在时回退到内置默认值。
+fn load_task_defaults(repo_root : String) -> @domain.TaskDefaults raise {
+  let path = @infra.task_defaults_path(repo_root)
+  if @infra.path_exists(path) {
+    @infra.read_task_defaults(path)
+  } else {
+    default_task_defaults()
+  }
+}
+
+///|
+/// 读取 check 默认偏好；文件不存在时回退到内置默认值。
+fn load_check_preferences(repo_root : String) -> @domain.CheckPreferences raise {
+  let path = @infra.check_preferences_path(repo_root)
+  if @infra.path_exists(path) {
+    @infra.read_check_preferences(path)
+  } else {
+    default_check_preferences()
+  }
+}
+
+///|
+/// 读取 report 默认偏好；文件不存在时回退到内置默认值。
+fn load_report_preferences(
+  repo_root : String,
+) -> @domain.ReportPreferences raise {
+  let path = @infra.report_preferences_path(repo_root)
+  if @infra.path_exists(path) {
+    @infra.read_report_preferences(path)
+  } else {
+    default_report_preferences()
+  }
 }
 
 ///|
@@ -320,13 +429,7 @@ fn render_repo_rules(repo_rules : @domain.RepoRules) -> String {
 ///|
 /// 将当前任务对象渲染为 current-task YAML。
 fn render_current_task(task : @domain.CurrentTask) -> String {
-  [
-    "task_type: \{task.task_type}",
-    "title: \"\{task.title}\"",
-    render_list_block("target_groups", task.target_groups),
-    render_list_block("target_paths", task.target_paths),
-  ].join("\n\n") +
-  "\n"
+  render_current_task_file(task)
 }
 
 ///|
@@ -441,31 +544,31 @@ fn default_templates() -> Array[TemplateSeed] {
 }
 
 ///|
-/// 解析命令行里的逗号分隔路径列表。
-fn split_paths_csv(paths_csv : String) -> Array[String] {
-  paths_csv
-  .split(",")
-  .map(path => path.trim().to_string())
-  .filter(path => path != "")
-  .collect()
-}
-
-///|
-/// 把 `@group_name` 形式的快捷选择从显式路径里拆出，供 task 命令同时支持路径组与具体路径。
-fn split_task_targets(paths_csv : String) -> (Array[String], Array[String]) {
-  let target_groups : Array[String] = []
-  let target_paths : Array[String] = []
-  for target in split_paths_csv(paths_csv) {
-    if target.has_prefix("@") {
-      let group_name = target[1:target.length()].trim().to_string()
-      if group_name != "" && !target_groups.contains(group_name) {
-        target_groups.push(group_name)
-      }
-    } else if !target_paths.contains(target) {
-      target_paths.push(target)
+/// 校验任务范围是否真的落在模板允许范围内。
+/// 不管范围是用户手填的，还是系统自动推断的，都必须过这一步。
+fn ensure_task_scope_allowed(
+  repo_rules : @domain.RepoRules,
+  template : @domain.TaskTemplate,
+  target_groups : Array[String],
+  target_paths : Array[String],
+) -> Unit raise {
+  let expanded_target_groups = @infra.expand_target_groups(
+    repo_rules.path_groups,
+    target_groups,
+  )
+  for
+    target_path in @infra.unique_strings(expanded_target_groups + target_paths) {
+    if !@infra.matches_any(target_path, template.allowed_paths) {
+      raise Failure::Failure(
+        "Target path \{target_path} is outside template allowed paths for \{template.task_type}",
+      )
+    }
+    if @infra.matches_any(target_path, template.forbidden_paths) {
+      raise Failure::Failure(
+        "Target path \{target_path} conflicts with forbidden paths for \{template.task_type}",
+      )
     }
   }
-  (target_groups, target_paths)
 }
 
 ///|
@@ -509,68 +612,52 @@ fn built_in_acceptance_pack_files() -> Array[(String, String)] {
       "acceptance/react-homepage-fixture/src/components/WorkLinks.jsx",
     ),
     (
-      "examples/acceptance/react-homepage-fixture/src/core/request.js",
-      "acceptance/react-homepage-fixture/src/core/request.js",
+      "examples/acceptance/react-homepage-fixture/src/core/request.js", "acceptance/react-homepage-fixture/src/core/request.js",
     ),
     (
-      "examples/acceptance/react-homepage-fixture/src/data/siteContent.js",
-      "acceptance/react-homepage-fixture/src/data/siteContent.js",
+      "examples/acceptance/react-homepage-fixture/src/data/siteContent.js", "acceptance/react-homepage-fixture/src/data/siteContent.js",
     ),
     (
-      "examples/acceptance/cases/pass/patch.diff",
-      "acceptance/cases/pass/patch.diff",
+      "examples/acceptance/cases/pass/patch.diff", "acceptance/cases/pass/patch.diff",
     ),
     (
-      "examples/acceptance/cases/pass/preview-report.json",
-      "acceptance/cases/pass/preview-report.json",
+      "examples/acceptance/cases/pass/preview-report.json", "acceptance/cases/pass/preview-report.json",
     ),
     (
-      "examples/acceptance/cases/pass/expected/checked-files.txt",
-      "acceptance/cases/pass/expected/checked-files.txt",
+      "examples/acceptance/cases/pass/expected/checked-files.txt", "acceptance/cases/pass/expected/checked-files.txt",
     ),
     (
-      "examples/acceptance/cases/pass/expected/gate-result.json",
-      "acceptance/cases/pass/expected/gate-result.json",
+      "examples/acceptance/cases/pass/expected/gate-result.json", "acceptance/cases/pass/expected/gate-result.json",
     ),
     (
-      "examples/acceptance/cases/pass/expected/gate-report.md",
-      "acceptance/cases/pass/expected/gate-report.md",
+      "examples/acceptance/cases/pass/expected/gate-report.md", "acceptance/cases/pass/expected/gate-report.md",
     ),
     (
-      "examples/acceptance/cases/retry/patch.diff",
-      "acceptance/cases/retry/patch.diff",
+      "examples/acceptance/cases/retry/patch.diff", "acceptance/cases/retry/patch.diff",
     ),
     (
-      "examples/acceptance/cases/retry/expected/checked-files.txt",
-      "acceptance/cases/retry/expected/checked-files.txt",
+      "examples/acceptance/cases/retry/expected/checked-files.txt", "acceptance/cases/retry/expected/checked-files.txt",
     ),
     (
-      "examples/acceptance/cases/retry/expected/gate-result.json",
-      "acceptance/cases/retry/expected/gate-result.json",
+      "examples/acceptance/cases/retry/expected/gate-result.json", "acceptance/cases/retry/expected/gate-result.json",
     ),
     (
-      "examples/acceptance/cases/retry/expected/gate-report.md",
-      "acceptance/cases/retry/expected/gate-report.md",
+      "examples/acceptance/cases/retry/expected/gate-report.md", "acceptance/cases/retry/expected/gate-report.md",
     ),
     (
-      "examples/acceptance/cases/reject/patch.diff",
-      "acceptance/cases/reject/patch.diff",
+      "examples/acceptance/cases/reject/patch.diff", "acceptance/cases/reject/patch.diff",
     ),
     (
-      "examples/acceptance/cases/reject/preview-report.json",
-      "acceptance/cases/reject/preview-report.json",
+      "examples/acceptance/cases/reject/preview-report.json", "acceptance/cases/reject/preview-report.json",
     ),
     (
-      "examples/acceptance/cases/reject/expected/checked-files.txt",
-      "acceptance/cases/reject/expected/checked-files.txt",
+      "examples/acceptance/cases/reject/expected/checked-files.txt", "acceptance/cases/reject/expected/checked-files.txt",
     ),
     (
-      "examples/acceptance/cases/reject/expected/gate-result.json",
-      "acceptance/cases/reject/expected/gate-result.json",
+      "examples/acceptance/cases/reject/expected/gate-result.json", "acceptance/cases/reject/expected/gate-result.json",
     ),
     (
-      "examples/acceptance/cases/reject/expected/gate-report.md",
-      "acceptance/cases/reject/expected/gate-report.md",
+      "examples/acceptance/cases/reject/expected/gate-report.md", "acceptance/cases/reject/expected/gate-report.md",
     ),
   ]
 }
@@ -582,8 +669,7 @@ fn export_built_in_acceptance_configs(pack_dir : String) -> Array[String] raise 
   let exported : Array[String] = []
 
   let repo_rules_target = @infra.join_path(
-    pack_dir,
-    "acceptance/.moonforge/repo-rules.yml",
+    pack_dir, "acceptance/.moonforge/repo-rules.yml",
   )
   @infra.write_text(repo_rules_target, render_acceptance_repo_rules(config))
   exported.push("acceptance/.moonforge/repo-rules.yml")
@@ -596,12 +682,15 @@ fn export_built_in_acceptance_configs(pack_dir : String) -> Array[String] raise 
   exported.push("acceptance/.moonforge/task-types/\{config.task_type}.yml")
 
   let current_task_target = @infra.join_path(
-    pack_dir,
-    "acceptance/.moonforge/current-task.yml",
+    pack_dir, "acceptance/.moonforge/current-task.yml",
   )
   @infra.write_text(
     current_task_target,
-    render_current_task_yaml(config.task_type, config.title, config.target_paths),
+    render_current_task_yaml(
+      config.task_type,
+      config.title,
+      config.target_paths,
+    ),
   )
   exported.push("acceptance/.moonforge/current-task.yml")
 
@@ -710,9 +799,35 @@ fn write_outputs(
   mode : String,
   result : @domain.CheckResult,
   run_context : @domain.RunContextFile,
+  preflight_advice : @domain.PreflightAdviceBundle,
+  task_profile : @domain.TaskProfileView,
+  run_input_story : @domain.RunInputStoryView,
 ) -> Unit raise {
   let latest_dir = @adapters.latest_output_dir(repo_root, mode)
   @infra.ensure_dir(latest_dir)
+  let run_context_json = run_context.to_json().stringify(indent=2) + "\n"
+  let context_summary = render_run_context_summary(run_context_json)
+  let explanation = build_decision_explanation(result)
+  let history_index = record_run_history(
+    repo_root,
+    build_run_history_record(result, mode, context_summary, "\{@uv.hrtime()}"),
+  )
+  let history_hint = render_history_hint(history_index)
+  let report_view = build_report_view(
+    result,
+    mode,
+    context_summary,
+    explanation,
+    history_hint,
+    preflight_advice.report_lines(),
+  )
+  let output_catalog = build_output_catalog_view(mode)
+  let output_walkthrough = build_output_walkthrough_view(
+    task_profile, run_input_story, report_view, preflight_advice, output_catalog,
+  )
+  let snapshot_card = render_run_snapshot_card(
+    result, context_summary, history_hint,
+  )
 
   let scope = @domain.ScopeResultFile::{
     checked_files: result.checked_files,
@@ -747,13 +862,79 @@ fn write_outputs(
     artifacts,
   )
   write_json_file(@infra.join_path(latest_dir, "gate-result.json"), gate)
+  write_json_file(@infra.join_path(latest_dir, "run-context.json"), run_context)
   write_json_file(
-    @infra.join_path(latest_dir, "run-context.json"),
-    run_context,
+    @infra.join_path(latest_dir, "decision-explanation.json"),
+    explanation,
+  )
+  write_json_file(@infra.join_path(latest_dir, "report-view.json"), report_view)
+  write_json_file(
+    @infra.join_path(latest_dir, "preflight-advice.json"),
+    preflight_advice,
+  )
+  write_json_file(
+    @infra.join_path(latest_dir, "task-profile.json"),
+    task_profile,
+  )
+  write_json_file(
+    @infra.join_path(latest_dir, "run-input-story.json"),
+    run_input_story,
+  )
+  write_json_file(
+    @infra.join_path(latest_dir, "output-catalog.json"),
+    output_catalog,
+  )
+  write_json_file(
+    @infra.join_path(latest_dir, "output-walkthrough.json"),
+    output_walkthrough,
   )
   @infra.write_text(
     @infra.join_path(latest_dir, "gate-report.md"),
     render_report_markdown(result),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "decision-explanation.md"),
+    render_decision_explanation_markdown(explanation),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "report-view.md"),
+    render_report_view_markdown(report_view),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "report-summary.txt"),
+    render_report_terminal_summary(report_view) + "\n",
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "run-snapshot.md"),
+    snapshot_card,
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "preflight-advice.md"),
+    render_preflight_advice_markdown(preflight_advice),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "task-profile.md"),
+    render_task_profile_markdown(task_profile),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "run-input-story.md"),
+    render_run_input_story_markdown(run_input_story),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "output-catalog.md"),
+    render_output_catalog_markdown(output_catalog),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "output-walkthrough.md"),
+    render_output_walkthrough_markdown(output_walkthrough),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "output-quickstart.txt"),
+    render_output_catalog_quickstart(output_catalog),
+  )
+  @infra.write_text(
+    @infra.join_path(latest_dir, "output-self-checklist.md"),
+    render_output_self_checklist(output_catalog),
   )
   @infra.write_text(
     @infra.join_path(latest_dir, "checked-files.txt"),
@@ -780,12 +961,85 @@ fn write_outputs(
     artifacts,
   )
   write_json_file(@infra.join_path(snapshot_dir, "gate.snapshot.json"), gate)
+  write_json_file(
+    @infra.join_path(snapshot_dir, "decision-explanation.snapshot.json"),
+    explanation,
+  )
+  write_json_file(
+    @infra.join_path(snapshot_dir, "report-view.snapshot.json"),
+    report_view,
+  )
+  write_json_file(
+    @infra.join_path(snapshot_dir, "preflight-advice.snapshot.json"),
+    preflight_advice,
+  )
+  write_json_file(
+    @infra.join_path(snapshot_dir, "task-profile.snapshot.json"),
+    task_profile,
+  )
+  write_json_file(
+    @infra.join_path(snapshot_dir, "run-input-story.snapshot.json"),
+    run_input_story,
+  )
+  write_json_file(
+    @infra.join_path(snapshot_dir, "output-catalog.snapshot.json"),
+    output_catalog,
+  )
+  write_json_file(
+    @infra.join_path(snapshot_dir, "output-walkthrough.snapshot.json"),
+    output_walkthrough,
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "decision-explanation.snapshot.md"),
+    render_decision_explanation_markdown(explanation),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "report-view.snapshot.md"),
+    render_report_view_markdown(report_view),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "run-snapshot.snapshot.md"),
+    snapshot_card,
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "preflight-advice.snapshot.md"),
+    render_preflight_advice_markdown(preflight_advice),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "task-profile.snapshot.md"),
+    render_task_profile_markdown(task_profile),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "run-input-story.snapshot.md"),
+    render_run_input_story_markdown(run_input_story),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "output-catalog.snapshot.md"),
+    render_output_catalog_markdown(output_catalog),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "output-walkthrough.snapshot.md"),
+    render_output_walkthrough_markdown(output_walkthrough),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "output-quickstart.snapshot.txt"),
+    render_output_catalog_quickstart(output_catalog),
+  )
+  @infra.write_text(
+    @infra.join_path(snapshot_dir, "output-self-checklist.snapshot.md"),
+    render_output_self_checklist(output_catalog),
+  )
 }
 
 ///|
 /// 初始化仓库内的 `.moonforge` 配置目录和默认模板。
 pub fn init_repo(repo_root : String) -> String raise {
   let moonforge_dir = @infra.join_path(repo_root, ".moonforge")
+  let default_artifact_dir = @infra.join_path(
+    repo_root, ".moonforge/artifacts/current",
+  )
+  let bootstrap = default_bootstrap_bundle()
+  let material_catalog = default_material_catalog()
   let review_schema =
     #|artifact_name: review-report.json
     #|
@@ -822,6 +1076,8 @@ pub fn init_repo(repo_root : String) -> String raise {
     #|
   @infra.ensure_dir(task_types_dir(repo_root))
   @infra.ensure_dir(artifact_schemas_dir(repo_root))
+  @infra.ensure_dir(bootstrap_dir(repo_root))
+  @infra.ensure_dir(default_artifact_dir)
   @infra.write_text(
     repo_rules_path(repo_root),
     render_repo_rules(default_repo_rules()),
@@ -843,6 +1099,22 @@ pub fn init_repo(repo_root : String) -> String raise {
   @infra.write_text(
     artifact_schema_path(repo_root, "preview-report.json"),
     preview_schema,
+  )
+  @infra.write_text(
+    @infra.task_defaults_path(repo_root),
+    @infra.render_task_defaults(bootstrap.task_defaults),
+  )
+  @infra.write_text(
+    @infra.check_preferences_path(repo_root),
+    @infra.render_check_preferences(bootstrap.check_preferences),
+  )
+  @infra.write_text(
+    @infra.report_preferences_path(repo_root),
+    @infra.render_report_preferences(bootstrap.report_preferences),
+  )
+  @infra.write_text(
+    material_catalog_path(repo_root),
+    @infra.render_material_catalog(material_catalog),
   )
   @infra.write_text(current_task_path(repo_root), blank_current_task_template())
   @infra.write_text(
@@ -874,39 +1146,39 @@ pub fn create_task(
     Ok(_) => ()
     Err(code) => raise Failure::Failure(code)
   }
-  let (target_groups, target_paths) = split_task_targets(paths_csv)
-  if title.trim() == "" {
-    raise Failure::Failure("Task title cannot be empty")
-  }
-  if target_groups.is_empty() && target_paths.is_empty() {
+  let seed = build_current_task_draft_seed(task_type, title, paths_csv)
+  let task_defaults = load_task_defaults(repo_root)
+  let snapshot = @infra.read_git_project_snapshot(repo_root)
+  if snapshot.staged_files.is_empty() &&
+    !seed.has_manual_title() &&
+    !seed.has_manual_scope() {
     raise Failure::Failure(
-      "At least one target path or target group is required",
+      "当前仓库没有可用的 git 暂存信息，请先 git add 文件，或手工补齐标题和路径",
     )
   }
-
-  let expanded_target_groups = @infra.expand_target_groups(
-    repo_rules.path_groups,
-    target_groups,
+  let plan = build_task_autofill_plan(
+    seed,
+    repo_rules,
+    template,
+    snapshot,
+    "\{@uv.hrtime()}",
+    task_defaults~,
   )
-  for
-    target_path in @infra.unique_strings(expanded_target_groups + target_paths) {
-    if !@infra.matches_any(target_path, template.allowed_paths) {
-      raise Failure::Failure(
-        "Target path \{target_path} is outside template allowed paths for \{task_type}",
-      )
-    }
-    if @infra.matches_any(target_path, template.forbidden_paths) {
-      raise Failure::Failure(
-        "Target path \{target_path} conflicts with forbidden paths for \{task_type}",
-      )
-    }
+  let task = plan.to_current_task()
+  if !seed.has_manual_scope() && !task.has_targets() {
+    raise Failure::Failure(
+      "当前暂存区没有命中模板允许范围的文件，无法自动补全任务范围",
+    )
   }
-
-  let task = @domain.CurrentTask::{
-    task_type,
-    title,
-    target_groups,
-    target_paths,
+  ensure_task_scope_allowed(
+    repo_rules,
+    template,
+    task.target_groups,
+    task.target_paths,
+  )
+  match @checkers.validate_current_task(task) {
+    Ok(_) => ()
+    Err(code) => raise Failure::Failure(code)
   }
   @infra.write_text(current_task_path(repo_root), render_current_task(task))
   task
@@ -1005,32 +1277,86 @@ pub fn run_check(
   let repo_rules = load_repo_rules(repo_root)
   let current_task = load_current_task(repo_root)
   let template = load_template(repo_root, current_task.task_type)
+  let check_preferences = load_check_preferences(repo_root)
   let effective_task = @checkers.build_effective_task(
     repo_rules, template, current_task,
   )
-  let diff_path = @infra.join_path(run_dir, "patch.diff")
+  let local_input = if actual_mode == "local" && run_dir.trim() == "" {
+    if check_preferences.auto_prepare_local_run_input {
+      Some(
+        prepare_local_check_input(
+          repo_root,
+          current_task,
+          @infra.read_git_project_snapshot(repo_root),
+        ),
+      )
+    } else {
+      raise Failure::Failure("当前仓库要求显式提供 --run 目录")
+    }
+  } else {
+    None
+  }
+  if actual_mode != "local" && run_dir.trim() == "" {
+    raise Failure::Failure("CI 或 PR 模式必须显式提供 --run 目录")
+  }
+  let effective_run_dir = match local_input {
+    Some(input) => input.run_dir
+    None => run_dir
+  }
+  let artifact_source_dir = match local_input {
+    Some(input) => input.artifact_source_dir
+    None => effective_run_dir
+  }
+  let diff_path = @infra.join_path(effective_run_dir, "patch.diff")
   let diff_text = if actual_mode == "pr" {
     @adapters.read_pr_diff(env, diff_path)
   } else if actual_mode == "ci" {
     @adapters.read_ci_diff(env, diff_path)
   } else {
-    @adapters.read_local_diff(run_dir)
+    @adapters.read_local_diff(effective_run_dir)
   }
-  let provided_artifacts = collect_present_artifacts(
-    run_dir,
+  let discovered_artifacts = discover_required_artifacts(
+    repo_root,
+    current_task,
     effective_task.required_artifacts,
   )
+  let provided_artifacts = if discovered_artifacts.provided_artifacts.is_empty() {
+    collect_present_artifacts(
+      artifact_source_dir,
+      effective_task.required_artifacts,
+    )
+  } else {
+    discovered_artifacts.provided_artifacts
+  }
   let artifact_required_fields = load_artifact_required_fields(
     repo_root,
     effective_task.required_artifacts,
   )
-  let run_id = @adapters.run_id_from_run_dir(run_dir)
+  let run_id = @adapters.run_id_from_run_dir(effective_run_dir)
   let result = @checkers.evaluate_gate(
     effective_task, diff_text, provided_artifacts, artifact_required_fields, repo_root,
     run_id,
   )
-  let run_context = build_run_context(actual_mode, run_dir, env)
-  write_outputs(repo_root, actual_mode, result, run_context)
+  let run_context = build_run_context(actual_mode, effective_run_dir, env)
+  let preflight_advice = build_preflight_advice_bundle(
+    repo_root,
+    current_task,
+    effective_task,
+    result.checked_files,
+    discovered_artifacts,
+  )
+  let task_profile = build_task_profile_view(
+    current_task,
+    effective_task,
+    result.checked_files,
+  )
+  let run_input_story = build_run_input_story_view(
+    actual_mode, effective_run_dir, artifact_source_dir, discovered_artifacts,
+  )
+  write_outputs(
+    repo_root, actual_mode, result, run_context, preflight_advice, task_profile,
+    run_input_story,
+  )
   result
 }
 
@@ -1056,16 +1382,35 @@ pub fn report_summary(
   mode? : String = "local",
 ) -> String raise {
   let actual_mode = @adapters.normalize_mode(mode)
+  let report_preferences = load_report_preferences(repo_root)
+  let summary_path = @infra.join_path(
+    @adapters.latest_output_dir(repo_root, actual_mode),
+    "report-summary.txt",
+  )
+  if @infra.path_exists(summary_path) {
+    let summary_text = @infra.read_text(summary_path).trim().to_string()
+    if summary_text != "" {
+      return summary_text
+    }
+  }
   match @infra.read_latest_gate_result(repo_root, actual_mode) {
     Some(json_text) => {
-      let context_summary = match @infra.read_latest_run_context(repo_root, actual_mode) {
-        Some(context_text) => render_run_context_summary(context_text)
-        None => ""
+      let context_summary = if report_preferences.show_context {
+        match @infra.read_latest_run_context(repo_root, actual_mode) {
+          Some(context_text) => render_run_context_summary(context_text)
+          None => ""
+        }
+      } else {
+        ""
       }
-      let metrics_summary = render_result_metrics_summary(
-        @infra.read_latest_scope_result(repo_root, actual_mode),
-        @infra.read_latest_artifact_result(repo_root, actual_mode),
-      )
+      let metrics_summary = if report_preferences.show_metrics {
+        render_result_metrics_summary(
+          @infra.read_latest_scope_result(repo_root, actual_mode),
+          @infra.read_latest_artifact_result(repo_root, actual_mode),
+        )
+      } else {
+        ""
+      }
       render_report_summary(
         extract_decision_label(json_text),
         actual_mode,
@@ -1083,13 +1428,16 @@ pub fn replay_check(repo_root : String, run_id : String) -> String raise {
   if !snapshot_exists(repo_root, run_id) {
     return render_snapshot_not_found(run_id)
   }
+  let history_hint = render_history_hint(read_run_history(repo_root))
   match read_task_snapshot(repo_root, run_id) {
     Some(snapshot_text) => {
-      let context_summary = match @infra.read_snapshot_run_context(repo_root, run_id) {
+      let context_summary = match
+        @infra.read_snapshot_run_context(repo_root, run_id) {
         Some(context_text) => render_run_context_summary(context_text)
         None => ""
       }
-      let decision_label = match @infra.read_snapshot_gate_result(repo_root, run_id) {
+      let decision_label = match
+        @infra.read_snapshot_gate_result(repo_root, run_id) {
         Some(gate_text) => extract_decision_label(gate_text)
         None => "Unknown"
       }
@@ -1097,13 +1445,18 @@ pub fn replay_check(repo_root : String, run_id : String) -> String raise {
         @infra.read_snapshot_scope_result(repo_root, run_id),
         @infra.read_snapshot_artifact_result(repo_root, run_id),
       )
-      render_replay_summary(
+      let summary = render_replay_summary(
         run_id,
         extract_task_type(snapshot_text),
         decision_label,
         context_summary,
         metrics_summary,
       )
+      if history_hint.trim() == "" {
+        summary
+      } else {
+        "\{summary}\n历史：\{history_hint}"
+      }
     }
     None => render_snapshot_not_found(run_id)
   }
@@ -1123,11 +1476,12 @@ pub fn doctor_repo(repo_root : String) -> String raise {
     Some(content) => content
     None => ""
   }
-  for issue in diagnose_pre_commit_hook(
-    pre_commit_hook,
-    @infra.path_exists(pre_commit_hook),
-    content=hook_content,
-  ) {
+  for
+    issue in diagnose_pre_commit_hook(
+      pre_commit_hook,
+      @infra.path_exists(pre_commit_hook),
+      content=hook_content,
+    ) {
     issues.push(issue)
   }
 
@@ -1201,7 +1555,12 @@ pub fn pack_latest(
 
   let fixed_outputs = collect_pack_files([
     "gate-result.json", "gate-report.md", "scope-result.json", "artifact-result.json",
-    "checked-files.txt", "events.jsonl", "run-context.json",
+    "checked-files.txt", "events.jsonl", "run-context.json", "decision-explanation.json",
+    "decision-explanation.md", "report-view.json", "report-view.md", "preflight-advice.json",
+    "preflight-advice.md", "task-profile.json", "task-profile.md", "run-input-story.json",
+    "run-input-story.md", "output-catalog.json", "output-catalog.md", "output-walkthrough.json",
+    "output-walkthrough.md", "output-quickstart.txt", "output-self-checklist.md",
+    "report-summary.txt", "run-snapshot.md",
   ])
   for name in fixed_outputs {
     if copy_text_file_if_exists(
@@ -1219,18 +1578,25 @@ pub fn pack_latest(
     }
   }
 
+  if copy_text_file_if_exists(
+      @infra.run_history_index_path(repo_root),
+      @infra.join_path(pack_dir, "run-history.log"),
+    ) {
+    copied_files.push("run-history.log")
+  }
+
   for target in export_built_in_acceptance_configs(pack_dir) {
     copied_files.push(target)
   }
 
   let manifest_files = copied_files + ["pack-manifest.json", "pack-summary.md"]
-  let gate_text = match @infra.read_text_if_exists(@infra.join_path(latest_dir, "gate-result.json")) {
+  let gate_text = match
+    @infra.read_text_if_exists(@infra.join_path(latest_dir, "gate-result.json")) {
     Some(content) => content
     None => ""
   }
-  let run_context_text = match @infra.read_text_if_exists(
-    @infra.join_path(latest_dir, "run-context.json"),
-  ) {
+  let run_context_text = match
+    @infra.read_text_if_exists(@infra.join_path(latest_dir, "run-context.json")) {
     Some(content) => content
     None => ""
   }

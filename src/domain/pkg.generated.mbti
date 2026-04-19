@@ -18,6 +18,22 @@ pub(all) struct ArtifactResultFile {
   command_failures : Array[String]
 } derive(ToJson, @debug.Debug)
 
+pub(all) struct BootstrapBundle {
+  task_defaults : TaskDefaults
+  check_preferences : CheckPreferences
+  report_preferences : ReportPreferences
+} derive(ToJson, @debug.Debug)
+pub fn BootstrapBundle::summary(Self) -> String
+
+pub(all) struct CheckPreferences {
+  prefer_staged_diff : Bool
+  auto_prepare_local_run_input : Bool
+  keep_local_input_snapshot : Bool
+  artifact_search_dirs : Array[String]
+  write_input_summary : Bool
+} derive(ToJson, @debug.Debug)
+pub fn CheckPreferences::summary(Self) -> String
+
 pub(all) struct CheckResult {
   run_id : String
   decision : Decision
@@ -43,9 +59,35 @@ pub(all) struct CheckResult {
 pub(all) struct CurrentTask {
   task_type : String
   title : String
+  title_source : String
   target_groups : Array[String]
   target_paths : Array[String]
+  target_path_source : String
+  staged_files : Array[String]
+  required_artifacts : Array[String]
+  required_commands : Array[String]
+  artifact_dir : String
+  check_mode : String
+  auto_inferred_fields : Array[String]
+  notes : Array[String]
+  need_user_review : Bool
+  last_auto_fill_ns : String
 } derive(ToJson, @debug.Debug)
+pub fn CurrentTask::has_targets(Self) -> Bool
+pub fn CurrentTask::merged_required_artifacts(Self, Array[String]) -> Array[String]
+pub fn CurrentTask::merged_required_commands(Self, Array[String]) -> Array[String]
+pub fn CurrentTask::summary(Self) -> String
+
+pub(all) struct CurrentTaskDraftSeed {
+  task_type : String
+  override_title : String
+  manual_target_groups : Array[String]
+  manual_target_paths : Array[String]
+  target_choices : Array[TaskTargetChoice]
+} derive(ToJson, @debug.Debug)
+pub fn CurrentTaskDraftSeed::has_manual_scope(Self) -> Bool
+pub fn CurrentTaskDraftSeed::has_manual_title(Self) -> Bool
+pub fn CurrentTaskDraftSeed::summary(Self) -> String
 
 pub(all) enum Decision {
   Accept
@@ -56,6 +98,38 @@ pub(all) enum Decision {
 pub fn Decision::label(Self) -> String
 pub fn Decision::next_action(Self) -> String
 pub fn Decision::summary(Self) -> String
+
+pub(all) struct DecisionExplanation {
+  decision : String
+  headline : String
+  reason_summary : String
+  next_action : String
+  buckets : Array[DecisionExplanationBucket]
+  follow_up_steps : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn DecisionExplanation::has_buckets(Self) -> Bool
+pub fn DecisionExplanation::item_count(Self) -> Int
+pub fn DecisionExplanation::summary(Self) -> String
+
+pub(all) struct DecisionExplanationBucket {
+  bucket_key : String
+  title : String
+  summary : String
+  items : Array[DecisionExplanationItem]
+} derive(ToJson, @debug.Debug)
+pub fn DecisionExplanationBucket::count(Self) -> Int
+pub fn DecisionExplanationBucket::has_severe_item(Self) -> Bool
+
+pub(all) struct DecisionExplanationItem {
+  code : String
+  bucket_key : String
+  title : String
+  severity : String
+  file : String?
+  detail : String
+  suggestion : String
+} derive(ToJson, @debug.Debug)
+pub fn DecisionExplanationItem::summary_line(Self) -> String
 
 pub(all) struct DecisionView {
   code : String
@@ -96,6 +170,105 @@ pub(all) struct GateResultFile {
   next_action : String
 } derive(ToJson, @debug.Debug)
 
+pub(all) struct GitProjectSnapshot {
+  repo_root : String
+  branch_name : String
+  staged_files : Array[String]
+  unstaged_files : Array[String]
+  untracked_files : Array[String]
+  status_entries : Array[GitStatusEntry]
+  staged_diff : String
+} derive(ToJson, @debug.Debug)
+pub fn GitProjectSnapshot::has_staged_changes(Self) -> Bool
+pub fn GitProjectSnapshot::summary(Self) -> String
+
+pub(all) struct GitStatusEntry {
+  staged_code : String
+  unstaged_code : String
+  path : String
+  previous_path : String?
+  is_staged : Bool
+  is_unstaged : Bool
+  is_untracked : Bool
+} derive(ToJson, @debug.Debug)
+pub fn GitStatusEntry::from_porcelain_line(String) -> Self raise
+pub fn GitStatusEntry::label(Self) -> String
+
+pub(all) struct LocalCheckInput {
+  run_dir : String
+  patch_path : String
+  artifact_source_dir : String
+  staged_files : Array[String]
+  notes : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn LocalCheckInput::run_id(Self) -> String
+pub fn LocalCheckInput::summary(Self) -> String
+
+pub(all) struct MaterialCatalog {
+  directories : Array[MaterialDirectorySpec]
+  artifact_aliases : Map[String, Array[String]]
+  preferred_directory_names : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn MaterialCatalog::candidate_names_for(Self, String) -> Array[String]
+pub fn MaterialCatalog::has_directories(Self) -> Bool
+
+pub(all) struct MaterialDirectorySpec {
+  name : String
+  directory : String
+  description : String
+} derive(ToJson, @debug.Debug)
+pub fn MaterialDirectorySpec::summary(Self) -> String
+
+pub(all) struct MaterialDiscoveryRecord {
+  artifact_name : String
+  searched_directories : Array[String]
+  matched_path : String?
+  matched_name : String?
+  note : String
+} derive(ToJson, @debug.Debug)
+pub fn MaterialDiscoveryRecord::found(Self) -> Bool
+
+pub(all) struct MaterialDiscoveryResult {
+  provided_artifacts : Map[String, String]
+  records : Array[MaterialDiscoveryRecord]
+  searched_directories : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn MaterialDiscoveryResult::found_count(Self) -> Int
+pub fn MaterialDiscoveryResult::summary(Self) -> String
+
+pub(all) struct OutputCatalogEntry {
+  file_name : String
+  title : String
+  purpose : String
+  when_to_read : String
+} derive(ToJson, @debug.Debug)
+pub fn OutputCatalogEntry::summary_line(Self) -> String
+
+pub(all) struct OutputCatalogView {
+  headline : String
+  mode : String
+  entries : Array[OutputCatalogEntry]
+} derive(ToJson, @debug.Debug)
+pub fn OutputCatalogView::count(Self) -> Int
+pub fn OutputCatalogView::find_entry(Self, String) -> OutputCatalogEntry?
+pub fn OutputCatalogView::has_entries(Self) -> Bool
+pub fn OutputCatalogView::summary(Self) -> String
+
+pub(all) struct OutputWalkthroughStep {
+  title : String
+  why_it_matters : String
+  action : String
+} derive(ToJson, @debug.Debug)
+
+pub(all) struct OutputWalkthroughView {
+  headline : String
+  steps : Array[OutputWalkthroughStep]
+} derive(ToJson, @debug.Debug)
+pub fn OutputWalkthroughView::count(Self) -> Int
+pub fn OutputWalkthroughView::first_step(Self) -> OutputWalkthroughStep?
+pub fn OutputWalkthroughView::has_steps(Self) -> Bool
+pub fn OutputWalkthroughView::summary(Self) -> String
+
 pub(all) struct PackManifestFile {
   mode : String
   run_id : String
@@ -106,6 +279,51 @@ pub(all) struct PackManifestFile {
   result_file_count : Int
   acceptance_file_count : Int
 } derive(ToJson, @debug.Debug)
+
+pub(all) struct PreflightAdviceBundle {
+  summary : String
+  items : Array[PreflightAdviceItem]
+  need_user_review : Bool
+} derive(ToJson, @debug.Debug)
+pub fn PreflightAdviceBundle::has_items(Self) -> Bool
+pub fn PreflightAdviceBundle::report_lines(Self) -> Array[String]
+pub fn PreflightAdviceBundle::warning_count(Self) -> Int
+
+pub(all) struct PreflightAdviceItem {
+  source : String
+  severity : String
+  title : String
+  detail : String
+  suggestion : String
+} derive(ToJson, @debug.Debug)
+pub fn PreflightAdviceItem::summary_line(Self) -> String
+
+pub(all) struct ProcessCapture {
+  command : String
+  cwd : String
+  exit_code : Int
+  stdout : String
+  stderr : String
+} derive(ToJson, @debug.Debug)
+pub fn ProcessCapture::is_ok(Self) -> Bool
+pub fn ProcessCapture::preferred_message(Self) -> String
+pub fn ProcessCapture::summary(Self) -> String
+
+pub(all) struct ProjectContext {
+  request_dir : String
+  repo_root : String
+  is_git_repo : Bool
+  moonforge_dir : String
+  repo_rules_file : String
+  task_types_dir : String
+  current_task_file : String
+  artifact_schema_dir : String
+  output_root_dir : String
+  runs_dir : String
+  hook_file : String
+} derive(ToJson, @debug.Debug)
+pub fn ProjectContext::latest_output_dir(Self, String) -> String
+pub fn ProjectContext::summary(Self) -> String
 
 pub(all) struct RepoRules {
   protected_paths : Array[String]
@@ -120,6 +338,37 @@ pub(all) struct RepoRules {
   max_changed_files : Int?
 } derive(@debug.Debug)
 
+pub(all) struct ReportPreferences {
+  show_context : Bool
+  show_metrics : Bool
+  show_next_action : Bool
+  show_history_hint : Bool
+  show_preflight_hint : Bool
+} derive(ToJson, @debug.Debug)
+pub fn ReportPreferences::summary(Self) -> String
+
+pub(all) struct ReportView {
+  mode : String
+  decision : String
+  headline : String
+  short_summary : String
+  sections : Array[ReportViewSection]
+  next_steps : Array[String]
+  history_hint : String
+} derive(ToJson, @debug.Debug)
+pub fn ReportView::filled_section_count(Self) -> Int
+pub fn ReportView::has_warning_sections(Self) -> Bool
+pub fn ReportView::summary(Self) -> String
+
+pub(all) struct ReportViewSection {
+  title : String
+  intro : String
+  lines : Array[String]
+  is_warning : Bool
+} derive(ToJson, @debug.Debug)
+pub fn ReportViewSection::has_content(Self) -> Bool
+pub fn ReportViewSection::line_count(Self) -> Int
+
 pub(all) struct RunContextFile {
   mode : String
   source_kind : String
@@ -130,6 +379,52 @@ pub(all) struct RunContextFile {
   pr_number : String?
   diff_path : String
 } derive(ToJson, @debug.Debug)
+
+pub(all) struct RunHistoryIndex {
+  records : Array[RunHistoryRecord]
+} derive(ToJson, @debug.Debug)
+pub fn RunHistoryIndex::attention_count(Self) -> Int
+pub fn RunHistoryIndex::contains_run_id(Self, String) -> Bool
+pub fn RunHistoryIndex::count(Self) -> Int
+pub fn RunHistoryIndex::decision_counts(Self) -> Map[String, Int]
+pub fn RunHistoryIndex::find_by_run_id(Self, String) -> RunHistoryRecord?
+pub fn RunHistoryIndex::is_empty(Self) -> Bool
+pub fn RunHistoryIndex::latest(Self) -> RunHistoryRecord?
+pub fn RunHistoryIndex::latest_n(Self, Int) -> Array[RunHistoryRecord]
+pub fn RunHistoryIndex::summary(Self) -> String
+pub fn RunHistoryIndex::trimmed(Self, Int) -> Self
+
+pub(all) struct RunHistoryRecord {
+  run_id : String
+  mode : String
+  decision : String
+  task_type : String
+  title : String
+  checked_file_count : Int
+  missing_artifact_count : Int
+  invalid_artifact_count : Int
+  command_failure_count : Int
+  violation_count : Int
+  context_summary : String
+  next_action : String
+  created_at_ns : String
+} derive(ToJson, @debug.Debug)
+pub fn RunHistoryRecord::matches_run_id(Self, String) -> Bool
+pub fn RunHistoryRecord::needs_attention(Self) -> Bool
+pub fn RunHistoryRecord::summary_line(Self) -> String
+
+pub(all) struct RunInputStoryView {
+  headline : String
+  mode : String
+  run_dir : String
+  artifact_source_dir : String
+  search_directories : Array[String]
+  discovered_artifact_count : Int
+  missing_artifact_count : Int
+  lines : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn RunInputStoryView::has_content(Self) -> Bool
+pub fn RunInputStoryView::summary(Self) -> String
 
 pub(all) struct ScopeResultFile {
   checked_files : Array[String]
@@ -144,6 +439,67 @@ pub(all) struct ScopeResultFile {
   max_changed_files : Int
 } derive(ToJson, @debug.Debug)
 
+pub(all) struct TaskAutoFillPlan {
+  task_type : String
+  title_suggestion : TaskTitleSuggestion
+  scope_suggestion : TaskScopeSuggestion
+  staged_files : Array[String]
+  required_artifacts : Array[String]
+  required_commands : Array[String]
+  artifact_dir : String
+  check_mode : String
+  auto_inferred_fields : Array[String]
+  notes : Array[String]
+  need_user_review : Bool
+  last_auto_fill_ns : String
+} derive(ToJson, @debug.Debug)
+pub fn TaskAutoFillPlan::summary(Self) -> String
+pub fn TaskAutoFillPlan::to_current_task(Self) -> CurrentTask
+
+pub(all) struct TaskDefaults {
+  default_check_mode : String
+  default_artifact_dir : String
+  default_title_prefixes : Map[String, String]
+  note_lines : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn TaskDefaults::summary(Self) -> String
+
+pub(all) struct TaskGroupMatch {
+  group_name : String
+  group_patterns : Array[String]
+  matched_files : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn TaskGroupMatch::is_useful(Self) -> Bool
+pub fn TaskGroupMatch::summary(Self) -> String
+
+pub(all) struct TaskProfileView {
+  headline : String
+  summary : String
+  lines : Array[String]
+  need_user_review : Bool
+} derive(ToJson, @debug.Debug)
+pub fn TaskProfileView::has_content(Self) -> Bool
+pub fn TaskProfileView::line_count(Self) -> Int
+
+pub(all) struct TaskScopeSuggestion {
+  target_groups : Array[String]
+  target_paths : Array[String]
+  covered_files : Array[String]
+  uncovered_files : Array[String]
+  group_matches : Array[TaskGroupMatch]
+  reason_lines : Array[String]
+} derive(ToJson, @debug.Debug)
+pub fn TaskScopeSuggestion::has_scope(Self) -> Bool
+pub fn TaskScopeSuggestion::needs_manual_review(Self) -> Bool
+pub fn TaskScopeSuggestion::summary(Self) -> String
+
+pub(all) struct TaskTargetChoice {
+  raw_value : String
+  normalized_value : String
+  is_group : Bool
+} derive(ToJson, @debug.Debug)
+pub fn TaskTargetChoice::label(Self) -> String
+
 pub(all) struct TaskTemplate {
   task_type : String
   allowed_paths : Array[String]
@@ -154,6 +510,15 @@ pub(all) struct TaskTemplate {
   max_changed_files : Int
   manual_approval_paths : Array[String]
 } derive(@debug.Debug)
+
+pub(all) struct TaskTitleSuggestion {
+  title : String
+  source : String
+  based_on_files : Array[String]
+  reason : String
+} derive(ToJson, @debug.Debug)
+pub fn TaskTitleSuggestion::is_blank(Self) -> Bool
+pub fn TaskTitleSuggestion::summary(Self) -> String
 
 pub(all) struct Violation {
   code : String

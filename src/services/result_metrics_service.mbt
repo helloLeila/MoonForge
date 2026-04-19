@@ -5,7 +5,10 @@
 /// 从简单 JSON 文本中提取一个整数字段，解析失败时返回 `None`。
 pub fn extract_json_int_field(json_text : String, field_name : String) -> Int? {
   let prefix = "\"\{field_name}\""
-  let lines = json_text.split("\n").map(line => line.trim().to_string()).collect()
+  let lines = json_text
+    .split("\n")
+    .map(line => line.trim().to_string())
+    .collect()
   for line in lines {
     if line.has_prefix(prefix) {
       let parts = line.split(":").map(part => part.trim().to_string()).collect()
@@ -14,11 +17,7 @@ pub fn extract_json_int_field(json_text : String, field_name : String) -> Int? {
         if value == "null" || value == "" {
           return None
         }
-        return Some(
-          @string.parse_int(value) catch {
-            _ => return None
-          },
-        )
+        return Some(@string.parse_int(value) catch { _ => return None })
       }
     }
   }
@@ -27,9 +26,15 @@ pub fn extract_json_int_field(json_text : String, field_name : String) -> Int? {
 
 ///|
 /// 统计指定 JSON 数组字段里包含多少项，字段不存在时返回 `0`。
-pub fn extract_json_array_length(json_text : String, field_name : String) -> Int {
+pub fn extract_json_array_length(
+  json_text : String,
+  field_name : String,
+) -> Int {
   let prefix = "\"\{field_name}\""
-  let lines = json_text.split("\n").map(line => line.trim().to_string()).collect()
+  let lines = json_text
+    .split("\n")
+    .map(line => line.trim().to_string())
+    .collect()
   let mut inside_target = false
   let mut item_count = 0
   for line in lines {
@@ -70,16 +75,13 @@ pub fn render_result_metrics_summary(
   match artifact_json {
     Some(artifact_text) => {
       let missing_count = extract_json_array_length(
-        artifact_text,
-        "missing_artifacts",
+        artifact_text, "missing_artifacts",
       )
       let invalid_count = extract_json_array_length(
-        artifact_text,
-        "invalid_artifacts",
+        artifact_text, "invalid_artifacts",
       )
       let command_failure_count = extract_json_array_length(
-        artifact_text,
-        "command_failures",
+        artifact_text, "command_failures",
       )
       parts.push("缺失材料：\{missing_count}")
       parts.push("无效材料：\{invalid_count}")
