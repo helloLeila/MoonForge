@@ -45,8 +45,19 @@ test "effective task merge expands target groups into allowed paths" {
   let current_task = @domain.CurrentTask::{
     task_type: "feature-change",
     title: "Refine user pages",
+    title_source: "manual_input",
     target_groups: ["frontend_user_pages"],
     target_paths: ["frontend/src/components/UserCard/**"],
+    target_path_source: "manual_input",
+    staged_files: [],
+    required_artifacts: [],
+    required_commands: [],
+    artifact_dir: ".moonforge/artifacts/current",
+    check_mode: "local",
+    auto_inferred_fields: [],
+    notes: [],
+    need_user_review: false,
+    last_auto_fill_ns: "1",
   }
 
   let effective = @checkers.build_effective_task(
@@ -89,8 +100,19 @@ test "effective task merge rejects explicit targets outside template scope" {
   let current_task = @domain.CurrentTask::{
     task_type: "feature-change",
     title: "Refine user page",
+    title_source: "manual_input",
     target_groups: ["mixed_targets"],
     target_paths: ["frontend/src/components/UserCard/**"],
+    target_path_source: "manual_input",
+    staged_files: [],
+    required_artifacts: [],
+    required_commands: [],
+    artifact_dir: ".moonforge/artifacts/current",
+    check_mode: "local",
+    auto_inferred_fields: [],
+    notes: [],
+    need_user_review: false,
+    last_auto_fill_ns: "1",
   }
 
   try {
@@ -129,8 +151,19 @@ test "effective task merge keeps stricter max file count" {
   let current_task = @domain.CurrentTask::{
     task_type: "feature-change",
     title: "Refine user page",
+    title_source: "manual_input",
     target_groups: ["frontend_user_pages"],
     target_paths: [],
+    target_path_source: "manual_input",
+    staged_files: [],
+    required_artifacts: [],
+    required_commands: [],
+    artifact_dir: ".moonforge/artifacts/current",
+    check_mode: "local",
+    auto_inferred_fields: [],
+    notes: [],
+    need_user_review: false,
+    last_auto_fill_ns: "1",
   }
 
   let effective = @checkers.build_effective_task(
