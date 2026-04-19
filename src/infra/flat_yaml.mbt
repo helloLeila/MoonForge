@@ -39,6 +39,22 @@ pub fn FlatYaml::get_lists_with_prefix(
 }
 
 ///|
+/// 按键名前缀提取多组标量字段，并去掉公共前缀作为输出 map 的键名。
+/// 这个能力主要给“按任务类型、按材料名定义一组标量”的配置文件使用。
+pub fn FlatYaml::get_scalars_with_prefix(
+  self : FlatYaml,
+  prefix : String,
+) -> Map[String, String] {
+  let matched : Map[String, String] = {}
+  self.scalars.each((key, value) => {
+    if key.has_prefix(prefix) {
+      matched[key[prefix.length():key.length()].to_string()] = value
+    }
+  })
+  matched
+}
+
+///|
 /// 去掉 YAML 字符串值外围的双引号。
 fn unquote(value : String) -> String {
   if value.length() >= 2 && value.has_prefix("\"") && value.has_suffix("\"") {
