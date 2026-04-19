@@ -46,6 +46,43 @@ pub fn repo_rules_header() -> String {
 
 ///|
 /// 生成空白当前任务文件的初始化模板文本，引导开发者填写。
+/// 这里故意把说明写得更白话，就是为了让第一次接手项目的人直接打开文件就知道要看哪里。
 pub fn blank_current_task_template() -> String {
-  "# 请填写当前任务信息\ntask_type: \"\"\ntitle: \"\"\ntarget_groups:\n  - \"\"\n\ntarget_paths:\n  - \"\"\n"
+  let template =
+    #|# 当前任务文件说明
+    #|# 先总说：这个文件决定 MoonForge 这一轮到底检查什么
+    #|# 再分说：最常改的是 title、target_groups、target_paths
+    #|# 如果你还没有运行 `moonforge task --type ...`，下面很多字段会先保持空白
+    #|
+    #|task_type: ""
+    #|
+    #|title: ""
+    #|
+    #|title_source: "manual_or_auto"
+    #|
+    #|target_groups:
+    #|
+    #|target_paths:
+    #|
+    #|target_path_source: "manual_or_auto"
+    #|
+    #|staged_files:
+    #|
+    #|required_artifacts:
+    #|
+    #|required_commands:
+    #|
+    #|artifact_dir: ".moonforge/artifacts/current"
+    #|
+    #|check_mode: "local"
+    #|
+    #|auto_inferred_fields:
+    #|
+    #|notes:
+    #|
+    #|need_user_review: true
+    #|
+    #|last_auto_fill_ns: ""
+    #|
+  template
 }
