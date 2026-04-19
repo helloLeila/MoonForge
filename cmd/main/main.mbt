@@ -17,6 +17,32 @@ fn option_value(matches : @argparse.Matches, key : String) -> String raise {
 }
 
 ///|
+/// 从 argparse 结果中提取某个可选参数。
+/// 如果用户没传这个参数，就直接回退到默认值。
+fn option_value_or_default(
+  matches : @argparse.Matches,
+  key : String,
+  default_value : String,
+) -> String {
+  match matches.values.get(key) {
+    Some(values) => if values.is_empty() { default_value } else { values[0] }
+    None => default_value
+  }
+}
+
+///|
+/// 根据命令名和 `--repo` 参数解析真正要操作的项目根目录。
+/// 这样用户在目标项目目录里直接运行时，就不需要每次都手写完整路径。
+fn resolve_repo_root(
+  command_name : String,
+  matches : @argparse.Matches,
+) -> String raise {
+  let repo_arg = option_value_or_default(matches, "repo", "")
+  let allow_non_git = command_name == "init"
+  @services.resolve_cli_project_context(repo_arg, allow_non_git~).repo_root
+}
+
+///|
 /// 定义 CLI 命令树，是所有命令入口的统一描述。
 fn cli() -> @argparse.Command {
   @argparse.Command(
@@ -28,22 +54,34 @@ fn cli() -> @argparse.Command {
     subcommands=[
       @argparse.Command(
         "init",
-        about="Initialize .moonforge config in a target repo",
+        about="Initialize .moonforge config in current repo by default",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
         ],
       ),
       @argparse.Command(
         "task",
-        about="Create current-task.yml from a named template",
+        about="Create current-task.yml and auto-fill most fields from staged files",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
           @argparse.OptionArg("type", about="Task type name", required=true),
-          @argparse.OptionArg("title", about="Task title", required=true),
+          @argparse.OptionArg(
+            "title",
+            about="Optional manual task title",
+            required=false,
+          ),
           @argparse.OptionArg(
             "paths",
-            about="Comma separated target paths",
-            required=true,
+            about="Optional comma separated paths or @group names",
+            required=false,
           ),
         ],
       ),
@@ -51,35 +89,59 @@ fn cli() -> @argparse.Command {
         "check",
         about="Run the gate check with a diff + artifact directory",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
-          @argparse.OptionArg("run", about="Run input directory", required=true),
-          @argparse.OptionArg("mode", about="Execution mode: local, ci, or pr", default_values=[
-            "local",
-          ]),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
+          @argparse.OptionArg(
+            "run",
+            about="Optional run input directory, local mode can auto-generate it",
+            required=false,
+          ),
+          @argparse.OptionArg(
+            "mode",
+            about="Execution mode: local, ci, or pr",
+            default_values=["local"],
+          ),
         ],
       ),
       @argparse.Command(
         "report",
         about="Print the latest generated gate report",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
-          @argparse.OptionArg("mode", about="Execution mode: local, ci, or pr", default_values=[
-            "local",
-          ]),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
+          @argparse.OptionArg(
+            "mode",
+            about="Execution mode: local, ci, or pr",
+            default_values=["local"],
+          ),
         ],
       ),
       @argparse.Command(
         "validate",
         about="Validate .moonforge config files in a target repo",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
         ],
       ),
       @argparse.Command(
         "replay",
         about="Replay a historical gate run from snapshot files",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
           @argparse.OptionArg(
             "run-id",
             about="Historical run id",
@@ -91,17 +153,27 @@ fn cli() -> @argparse.Command {
         "doctor",
         about="Diagnose repository onboarding status and config health",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
         ],
       ),
       @argparse.Command(
         "pack",
         about="Export the latest run outputs plus the built-in acceptance package",
         options=[
-          @argparse.OptionArg("repo", about="Target repo root", required=true),
-          @argparse.OptionArg("mode", about="Execution mode: local, ci, or pr", default_values=[
-            "local",
-          ]),
+          @argparse.OptionArg(
+            "repo",
+            about="Target repo root, default is current directory",
+            required=false,
+          ),
+          @argparse.OptionArg(
+            "mode",
+            about="Execution mode: local, ci, or pr",
+            default_values=["local"],
+          ),
         ],
       ),
       @argparse.Command(
@@ -135,61 +207,71 @@ fn main {
     }
 
     match name {
-      "init" =>
-        println(
-          @services.dispatch_cli_command(name, option_value(child, "repo")),
-        )
-      "task" =>
+      "init" => {
+        let repo_root = resolve_repo_root(name, child)
+        println(@services.dispatch_cli_command(name, repo_root))
+      }
+      "task" => {
+        let repo_root = resolve_repo_root(name, child)
         println(
           @services.dispatch_cli_command(
             name,
-            option_value(child, "repo"),
+            repo_root,
             task_type=option_value(child, "type"),
-            title=option_value(child, "title"),
-            paths=option_value(child, "paths"),
+            title=option_value_or_default(child, "title", ""),
+            paths=option_value_or_default(child, "paths", ""),
           ),
         )
-      "check" =>
+      }
+      "check" => {
+        let repo_root = resolve_repo_root(name, child)
         println(
           @services.dispatch_cli_command(
             name,
-            option_value(child, "repo"),
-            run=option_value(child, "run"),
+            repo_root,
+            run=option_value_or_default(child, "run", ""),
             mode=option_value(child, "mode"),
           ),
         )
-      "report" =>
+      }
+      "report" => {
+        let repo_root = resolve_repo_root(name, child)
         println(
           @services.dispatch_cli_command(
             name,
-            option_value(child, "repo"),
+            repo_root,
             mode=option_value(child, "mode"),
           ),
         )
-      "validate" =>
-        println(
-          @services.dispatch_cli_command(name, option_value(child, "repo")),
-        )
-      "replay" =>
+      }
+      "validate" => {
+        let repo_root = resolve_repo_root(name, child)
+        println(@services.dispatch_cli_command(name, repo_root))
+      }
+      "replay" => {
+        let repo_root = resolve_repo_root(name, child)
         println(
           @services.dispatch_cli_command(
             name,
-            option_value(child, "repo"),
+            repo_root,
             run_id=option_value(child, "run-id"),
           ),
         )
-      "doctor" =>
-        println(
-          @services.dispatch_cli_command(name, option_value(child, "repo")),
-        )
-      "pack" =>
+      }
+      "doctor" => {
+        let repo_root = resolve_repo_root(name, child)
+        println(@services.dispatch_cli_command(name, repo_root))
+      }
+      "pack" => {
+        let repo_root = resolve_repo_root(name, child)
         println(
           @services.dispatch_cli_command(
             name,
-            option_value(child, "repo"),
+            repo_root,
             mode=option_value(child, "mode"),
           ),
         )
+      }
       "acc" => {
         guard child.subcommand is Some((acc_case, _)) else {
           raise Failure::Failure("Missing acceptance case")

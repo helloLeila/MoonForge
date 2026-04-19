@@ -9,6 +9,36 @@ fn unique_cli_repo(label : String) -> String {
 }
 
 ///|
+/// 为依赖 git 暂存区的 CLI 测试生成独立目录，避免受当前工作树影响。
+fn unique_cli_git_repo(label : String) -> String {
+  @infra.join_path("/tmp", @infra.unique_temp_name("moonforge-cli-\{label}"))
+}
+
+///|
+/// 初始化一个带暂存文件的最小 git 仓库，供 CLI 的 task 自动补全场景复用。
+fn seed_cli_git_repo(repo : String) -> Unit raise {
+  @infra.ensure_dir(repo)
+  ignore(@infra.run_shell_command("git init -q", repo))
+  ignore(
+    @infra.run_shell_command("git config user.name 'MoonForge CLI Test'", repo),
+  )
+  ignore(
+    @infra.run_shell_command(
+      "git config user.email 'moonforge-cli@test.local'", repo,
+    ),
+  )
+  @infra.write_text(
+    @infra.join_path(repo, "frontend/src/pages/UserList/index.tsx"),
+    "export const userListPage = true\n",
+  )
+  ignore(
+    @infra.run_shell_command(
+      "git add frontend/src/pages/UserList/index.tsx", repo,
+    ),
+  )
+}
+
+///|
 /// validate 子命令应调用配置校验服务并返回通过摘要。
 test "cli dispatches validate command" {
   let repo = unique_cli_repo("validate")
@@ -21,6 +51,49 @@ test "cli dispatches validate command" {
 
   let output = @services.dispatch_cli_command("validate", repo)
   assert_true(output.contains("配置校验通过"))
+}
+
+///|
+/// task 子命令应允许只传任务类型，由服务层自动补齐标题和范围。
+test "cli dispatches task command with autofill" {
+  let repo = unique_cli_git_repo("task-autofill")
+  seed_cli_git_repo(repo)
+  ignore(@services.init_repo(repo))
+
+  let output = @services.dispatch_cli_command(
+    "task",
+    repo,
+    task_type="feature-change",
+  )
+  let content = @infra.read_text(
+    @infra.join_path(repo, ".moonforge/current-task.yml"),
+  )
+
+  assert_true(output.contains("Wrote current-task.yml"))
+  assert_true(content.contains("title_source"))
+  assert_true(content.contains("staged_files"))
+}
+
+///|
+/// check 子命令在本地模式下应支持省略 run 目录，自动读取暂存区。
+test "cli dispatches check command with auto local input" {
+  let repo = unique_cli_git_repo("check-autofill")
+  seed_cli_git_repo(repo)
+  ignore(@services.init_repo(repo))
+  ignore(
+    @services.dispatch_cli_command("task", repo, task_type="feature-change"),
+  )
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/artifacts/current/test-report.json"),
+    "{\n  \"passed\": true,\n  \"suite\": \"cli\"\n}\n",
+  )
+  @infra.write_text(
+    @infra.join_path(repo, ".moonforge/artifacts/current/review-report.json"),
+    "{\n  \"reviewer\": \"cli\",\n  \"status\": \"approved\"\n}\n",
+  )
+
+  let output = @services.dispatch_cli_command("check", repo)
+  assert_true(output.contains("decision: Accept"))
 }
 
 ///|
