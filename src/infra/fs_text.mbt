@@ -24,6 +24,14 @@ fn[T] with_loop(f : (@uv.Loop) -> T raise) -> T raise {
 }
 
 ///|
+/// 生成一个适合临时目录或临时文件使用的唯一名称。
+/// 入参：`prefix`，调用方希望附加在前面的业务前缀。
+/// 出参：包含前缀和高精度时间戳的唯一名称。
+pub fn unique_temp_name(prefix : String) -> String {
+  "\{prefix}-\{@uv.hrtime()}"
+}
+
+///|
 /// 判断路径是否存在，用于材料和输出目录检查。
 pub fn path_exists(path : String) -> Bool raise {
   let target = normalize_path(path)
@@ -159,6 +167,20 @@ pub fn write_text(path : String, content : String) -> Unit raise {
         let _ = try? uv.fs_close_sync(file)
         raise err
       }
+    }
+  })
+}
+
+///|
+/// 删除一个普通文件，若文件不存在则静默跳过。
+/// 入参：`path`，要删除的文件路径。
+/// 出参：无；不存在时不会报错。
+pub fn remove_file_if_exists(path : String) -> Unit raise {
+  let target = normalize_path(path)
+  with_loop((uv : @uv.Loop) => {
+    uv.fs_unlink_sync(@utf8.encode(target)) catch {
+      Errno::ENOENT => ()
+      err => raise err
     }
   })
 }
