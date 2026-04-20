@@ -55,6 +55,16 @@ pub fn diagnose_required_fields(
 
 ///|
 /// 检测仓库是否已经接通内容完整的 `pre-commit` hook。
+fn has_moonforge_check_command(content : String) -> Bool {
+  content.contains("moonforge check") ||
+  (
+    content.contains("MOONFORGE_BIN") &&
+    content.contains("check --repo .")
+  )
+}
+
+///|
+/// 检测仓库是否已经接通内容完整的 `pre-commit` hook。
 pub fn diagnose_pre_commit_hook(
   hook_path : String,
   exists : Bool,
@@ -62,8 +72,8 @@ pub fn diagnose_pre_commit_hook(
 ) -> Array[String] {
   if !exists {
     ["缺失 pre-commit hook：\{hook_path}"]
-  } else if !content.contains("moonforge check") {
-    ["pre-commit hook 内容不完整：缺少 moonforge check 命令"]
+  } else if !has_moonforge_check_command(content) {
+    ["pre-commit hook 内容不完整：缺少 MoonForge 检查命令"]
   } else if !content.contains(".moonforge/current-task.yml") {
     ["pre-commit hook 内容不完整：缺少 current-task 检查"]
   } else {

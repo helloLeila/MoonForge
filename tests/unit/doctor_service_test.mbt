@@ -69,7 +69,7 @@ test "diagnose_pre_commit_hook accepts present hook" {
   let issues = @services.diagnose_pre_commit_hook(
     "/repo/.git/hooks/pre-commit",
     true,
-    content="#!/bin/sh\nif [ ! -f .moonforge/current-task.yml ]; then\n  exit 1\nfi\nmoonforge check --repo . --run .moonforge/fixture-runs/pre-commit\n",
+    content="#!/bin/sh\nif [ ! -f .moonforge/current-task.yml ]; then\n  exit 1\nfi\nif command -v moonforge >/dev/null 2>&1; then\n  MOONFORGE_BIN=$(command -v moonforge)\nfi\noutput=$($MOONFORGE_BIN check --repo . 2>&1 || true)\nprintf '%s\\n' \"$output\"\n",
   )
   assert_true(issues.is_empty())
 }
@@ -83,5 +83,5 @@ test "diagnose_pre_commit_hook reports incomplete hook content" {
     content="#!/bin/sh\necho only\n",
   )
   assert_eq(issues.length(), 1)
-  assert_true(issues[0].contains("moonforge check"))
+  assert_true(issues[0].contains("检查命令"))
 }

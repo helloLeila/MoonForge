@@ -23,9 +23,17 @@ pub fn render_pre_commit_hook() -> String {
     #|  exit 1
     #|fi
     #|
-    #|mkdir -p .moonforge/fixture-runs/pre-commit
-    #|git diff --cached > .moonforge/fixture-runs/pre-commit/patch.diff
-    #|output=$(moonforge check --repo . --run .moonforge/fixture-runs/pre-commit 2>&1 || true)
+    #|if command -v moonforge >/dev/null 2>&1; then
+    #|  MOONFORGE_BIN=$(command -v moonforge)
+    #|elif [ -x "./node_modules/.bin/moonforge" ]; then
+    #|  MOONFORGE_BIN="./node_modules/.bin/moonforge"
+    #|else
+    #|  echo "MoonForge: moonforge binary not found in PATH or ./node_modules/.bin"
+    #|  echo "MoonForge：未在 PATH 或 ./node_modules/.bin 中找到 moonforge 可执行文件"
+    #|  exit 1
+    #|fi
+    #|
+    #|output=$("$MOONFORGE_BIN" check --repo . 2>&1 || true)
     #|printf '%s\n' "$output"
     #|
     #|case "$output" in

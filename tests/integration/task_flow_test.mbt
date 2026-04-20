@@ -108,7 +108,8 @@ test "init creates repo rules and five templates" {
   let hook_text = @infra.read_text(
     @infra.join_path(repo, ".git/hooks/pre-commit"),
   )
-  assert_true(hook_text.contains("moonforge check"))
+  assert_true(hook_text.contains("check --repo ."))
+  assert_true(hook_text.contains("MOONFORGE_BIN"))
   assert_true(hook_text.contains(".moonforge/current-task.yml"))
 }
 
