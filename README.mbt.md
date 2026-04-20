@@ -23,6 +23,19 @@ moonforge --help
 The npm package is only a distribution entry. The real checker is still the standalone `moonforge` binary downloaded from GitHub Releases.
 npm 包只是分发入口，真正执行检查的仍然是从 GitHub Releases 下载的独立 `moonforge` 二进制。
 
+## Release Automation / 自动发版
+
+Maintainers only:
+仅维护者使用：
+
+1. Add a repository secret named `NPM_TOKEN`.
+2. Push a tag such as `v0.1.0`, or run the `MoonForge Release` workflow manually with `release_tag`.
+3. GitHub Actions will build release assets first, then publish `npm/cli` to npm.
+
+1. 在仓库里添加一个名为 `NPM_TOKEN` 的 Actions Secret。
+2. 推送 `v0.1.0` 这类 tag，或者在 GitHub Actions 页面手动运行 `MoonForge Release`，并填写 `release_tag`。
+3. GitHub 会先构建 Release 二进制，再把 `npm/cli` 自动发布到 npm。
+
 ## What It Does / 它做什么
 
 - `moonforge init`
