@@ -3,12 +3,32 @@
 MoonForge Gate is a MoonBit CLI for AI coding governance before code is committed or merged.  
 MoonForge Gate 是一个用 MoonBit 编写的 AI coding 准入门禁 CLI，用于在提交前和线上复检前拦截问题改动。
 
+## Install / 安装
+
+Standalone installer:
+独立安装脚本：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/helloLeila/MoonForge/main/scripts/install.sh | bash
+```
+
+npm distribution entry:
+npm 分发入口：
+
+```bash
+npm i -g @helloleila/moonforge
+moonforge --help
+```
+
+The npm package is only a distribution entry. The real checker is still the standalone `moonforge` binary downloaded from GitHub Releases.
+npm 包只是分发入口，真正执行检查的仍然是从 GitHub Releases 下载的独立 `moonforge` 二进制。
+
 ## What It Does / 它做什么
 
 - `moonforge init`
   Create `.moonforge/` repo rules, task templates, artifact schemas, and a blank current task.
-  Also scaffold a `pre-commit` hook that prepares a staged diff and calls `moonforge check`.
-  生成 `.moonforge/` 规则目录、任务模板、材料 schema 和空白当前任务，同时写入一个会准备 staged diff 并调用 `moonforge check` 的 `pre-commit` hook 脚手架。
+  Also scaffold a `pre-commit` hook that locates the `moonforge` binary and calls `moonforge check`.
+  生成 `.moonforge/` 规则目录、任务模板、材料 schema 和空白当前任务，同时写入一个会定位 `moonforge` 可执行文件并调用 `moonforge check` 的 `pre-commit` hook 脚手架。
 
 - `moonforge task`
   Narrow the current change scope into explicit target paths and task type.
@@ -44,15 +64,15 @@ Local pre-commit:
 本地提交前：
 
 1. `moonforge init`
-2. `moonforge task`
-3. `git add`
+2. `git add`
+3. `moonforge task feature-change`
 4. `moonforge check`
 
 PR or CI recheck:
 线上 PR / CI 复检：
 
 1. Reuse the same `.moonforge` config.
-2. Run `moonforge check --mode ci` for generic CI rechecks, or `--mode pr` for PR-oriented rechecks.
+2. Run `moonforge check`. The CLI auto-detects local, CI, and PR environments by default.
 3. Read `gate-result.json`, `gate-report.md`, and `run-context.json`.
 
 ## Repo Config / 仓库配置
@@ -70,8 +90,8 @@ PR or CI recheck:
   当前编码任务的活动边界。
 
 - `.git/hooks/pre-commit`
-  A generated hook scaffold that captures the staged diff before calling `moonforge check`.
-  一个生成式 hook 脚手架，会先采集 staged diff，再调用 `moonforge check`。
+  A generated hook scaffold that locates `moonforge` from PATH or `./node_modules/.bin`, then runs `moonforge check`.
+  一个生成式 hook 脚手架，会先从 PATH 或 `./node_modules/.bin` 中定位 `moonforge`，再执行 `moonforge check`。
 
 - `.moonforge/artifact-schemas/*.yml`
   Required JSON fields for artifacts such as `preview-report.json` or `review-report.json`.
@@ -130,15 +150,27 @@ The exported acceptance bundle includes:
 
 ## Useful Commands / 常用命令
 
+For end users:
+给最终用户：
+
+```bash
+moonforge init
+git add .
+moonforge task feature-change
+moonforge check
+moonforge report
+```
+
+For repository maintainers developing MoonForge itself:
+给正在开发 MoonForge 本体的维护者：
+
 ```bash
 moon build
 moon test
 moon run cmd/main -- init --repo ./tmp/demo
-moon run cmd/main -- task --repo ./tmp/demo --type feature-change --title "Add filter" --paths "frontend/src/pages/**,frontend/src/components/**"
+moon run cmd/main -- task feature-change --repo ./tmp/demo --title "Add filter" --paths "frontend/src/pages/**,frontend/src/components/**"
 moon run cmd/main -- validate --repo ./tmp/demo
 moon run cmd/main -- check --repo ./tmp/demo --run ./examples/runs/pass
-moon run cmd/main -- check --repo ./tmp/demo --run ./examples/runs/pass --mode ci
-moon run cmd/main -- check --repo ./tmp/demo --run ./examples/runs/pass --mode pr
 moon run cmd/main -- report --repo ./tmp/demo
 moon run cmd/main -- replay --repo ./tmp/demo --run-id run-pass
 moon run cmd/main -- doctor --repo ./tmp/demo

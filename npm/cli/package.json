@@ -1,0 +1,32 @@
+{
+  "name": "@helloleila/moonforge",
+  "version": "0.1.0",
+  "description": "npm distribution entry for the MoonForge standalone CLI",
+  "license": "Apache-2.0",
+  "type": "commonjs",
+  "bin": {
+    "moonforge": "bin/moonforge.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "bin",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/helloLeila/MoonForge.git"
+  },
+  "homepage": "https://github.com/helloLeila/MoonForge",
+  "bugs": {
+    "url": "https://github.com/helloLeila/MoonForge/issues"
+  },
+  "keywords": [
+    "moonforge",
+    "cli",
+    "git",
+    "pre-commit",
+    "ai-coding"
+  ]
+}
