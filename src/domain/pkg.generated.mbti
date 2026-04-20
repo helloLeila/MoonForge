@@ -253,6 +253,7 @@ pub fn OutputCatalogView::count(Self) -> Int
 pub fn OutputCatalogView::find_entry(Self, String) -> OutputCatalogEntry?
 pub fn OutputCatalogView::has_entries(Self) -> Bool
 pub fn OutputCatalogView::summary(Self) -> String
+pub fn OutputCatalogView::titles(Self) -> Array[String]
 
 pub(all) struct OutputWalkthroughStep {
   title : String
@@ -267,6 +268,7 @@ pub(all) struct OutputWalkthroughView {
 pub fn OutputWalkthroughView::count(Self) -> Int
 pub fn OutputWalkthroughView::first_step(Self) -> OutputWalkthroughStep?
 pub fn OutputWalkthroughView::has_steps(Self) -> Bool
+pub fn OutputWalkthroughView::last_step(Self) -> OutputWalkthroughStep?
 pub fn OutputWalkthroughView::summary(Self) -> String
 
 pub(all) struct PackManifestFile {

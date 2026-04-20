@@ -17,6 +17,16 @@ fn option_value(matches : @argparse.Matches, key : String) -> String raise {
 }
 
 ///|
+/// 从解析结果里读取某个参数的第一个值。
+/// 这个帮助函数同时兼容 option 和 positional，因为它们最后都会落进 `matches.values`。
+fn first_value(matches : @argparse.Matches, key : String) -> String? {
+  match matches.values.get(key) {
+    Some(values) if !values.is_empty() => Some(values[0])
+    _ => None
+  }
+}
+
+///|
 /// 从 argparse 结果中提取某个可选参数。
 /// 如果用户没传这个参数，就直接回退到默认值。
 fn option_value_or_default(
@@ -24,9 +34,26 @@ fn option_value_or_default(
   key : String,
   default_value : String,
 ) -> String {
-  match matches.values.get(key) {
-    Some(values) => if values.is_empty() { default_value } else { values[0] }
+  match first_value(matches, key) {
+    Some(value) => value
     None => default_value
+  }
+}
+
+///|
+/// task 命令既支持新的位置参数写法，也兼容旧的 `--type` 写法。
+/// 优先级上，位置参数优先，因为这是后续文档要主推的新入口。
+fn task_type_value(matches : @argparse.Matches) -> String raise {
+  match first_value(matches, "task_type") {
+    Some(value) => value
+    None =>
+      match first_value(matches, "type") {
+        Some(value) => value
+        None =>
+          raise Failure::Failure(
+            "Missing task type. Use `moonforge task feature-change`.",
+          )
+      }
   }
 }
 
@@ -66,13 +93,21 @@ fn cli() -> @argparse.Command {
       @argparse.Command(
         "task",
         about="Create current-task.yml and auto-fill most fields from staged files",
+        arg_required_else_help=true,
+        positionals=[
+          @argparse.PositionArg("task_type", about="Task type name"),
+        ],
         options=[
           @argparse.OptionArg(
             "repo",
             about="Target repo root, default is current directory",
             required=false,
           ),
-          @argparse.OptionArg("type", about="Task type name", required=true),
+          @argparse.OptionArg(
+            "type",
+            about="Deprecated task type option, use positional task type instead",
+            required=false,
+          ),
           @argparse.OptionArg(
             "title",
             about="Optional manual task title",
@@ -87,7 +122,7 @@ fn cli() -> @argparse.Command {
       ),
       @argparse.Command(
         "check",
-        about="Run the gate check with a diff + artifact directory",
+        about="Run the gate check, auto-detecting local, CI, or PR mode by default",
         options=[
           @argparse.OptionArg(
             "repo",
@@ -101,8 +136,8 @@ fn cli() -> @argparse.Command {
           ),
           @argparse.OptionArg(
             "mode",
-            about="Execution mode: local, ci, or pr",
-            default_values=["local"],
+            about="Optional mode override: auto, local, ci, or pr",
+            required=false,
           ),
         ],
       ),
@@ -117,8 +152,8 @@ fn cli() -> @argparse.Command {
           ),
           @argparse.OptionArg(
             "mode",
-            about="Execution mode: local, ci, or pr",
-            default_values=["local"],
+            about="Optional mode override: auto, local, ci, or pr",
+            required=false,
           ),
         ],
       ),
@@ -171,8 +206,8 @@ fn cli() -> @argparse.Command {
           ),
           @argparse.OptionArg(
             "mode",
-            about="Execution mode: local, ci, or pr",
-            default_values=["local"],
+            about="Optional mode override: auto, local, ci, or pr",
+            required=false,
           ),
         ],
       ),
@@ -217,7 +252,7 @@ fn main {
           @services.dispatch_cli_command(
             name,
             repo_root,
-            task_type=option_value(child, "type"),
+            task_type=task_type_value(child),
             title=option_value_or_default(child, "title", ""),
             paths=option_value_or_default(child, "paths", ""),
           ),
@@ -230,7 +265,7 @@ fn main {
             name,
             repo_root,
             run=option_value_or_default(child, "run", ""),
-            mode=option_value(child, "mode"),
+            mode=option_value_or_default(child, "mode", "auto"),
           ),
         )
       }
@@ -240,7 +275,7 @@ fn main {
           @services.dispatch_cli_command(
             name,
             repo_root,
-            mode=option_value(child, "mode"),
+            mode=option_value_or_default(child, "mode", "auto"),
           ),
         )
       }
@@ -268,7 +303,7 @@ fn main {
           @services.dispatch_cli_command(
             name,
             repo_root,
-            mode=option_value(child, "mode"),
+            mode=option_value_or_default(child, "mode", "auto"),
           ),
         )
       }

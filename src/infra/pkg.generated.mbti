@@ -59,6 +59,8 @@ pub fn read_flat_yaml(String) -> FlatYaml raise
 
 pub fn read_git_project_snapshot(String) -> @domain.GitProjectSnapshot
 
+pub fn read_head_commit_diff(String) -> String raise
+
 pub fn read_latest_artifact_result(String, String) -> String? raise
 
 pub fn read_latest_gate_result(String, String) -> String? raise
@@ -68,6 +70,8 @@ pub fn read_latest_run_context(String, String) -> String? raise
 pub fn read_latest_scope_result(String, String) -> String? raise
 
 pub fn read_material_catalog(String) -> @domain.MaterialCatalog raise
+
+pub fn read_pr_compare_diff(String, String) -> String raise
 
 pub fn read_report_preferences(String) -> @domain.ReportPreferences raise
 

@@ -602,6 +602,50 @@ fn copy_text_file_if_exists(source : String, target : String) -> Bool raise {
 }
 
 ///|
+/// 在没有显式 `--run` 目录时，为 CI / PR 模式自动生成输入目录。
+/// 这一步和本地模式的 staged 输入类似，只是补丁来源不再是暂存区，而是当前仓库历史。
+fn prepare_hosted_check_input(
+  repo_root : String,
+  current_task : @domain.CurrentTask,
+  mode : String,
+  env : Map[String, String],
+) -> (String, String) raise {
+  let run_dir = @infra.join_path(
+    repo_root,
+    ".moonforge/runs/\{mode}-auto-\{@uv.hrtime()}/input",
+  )
+  let patch_path = @infra.join_path(run_dir, "patch.diff")
+  let artifact_source_dir = resolve_artifact_source_dir(repo_root, current_task)
+  let diff_text = if mode == "pr" {
+    guard @adapters.github_base_ref(env) is Some(base_ref) else {
+      raise Failure::Failure("PR_CONTEXT_NOT_FOUND")
+    }
+    @infra.read_pr_compare_diff(repo_root, base_ref)
+  } else {
+    @infra.read_head_commit_diff(repo_root)
+  }
+  let summary_lines = [
+    "# 在线检查输入说明",
+    "",
+    "## 先总说",
+    "这次 `moonforge check` 没有手工提供 --run，所以系统根据当前仓库历史自动生成了输入目录。",
+    "",
+    "## 再分说",
+    "- mode: \{mode}",
+    "- patch_path: \{patch_path}",
+    "- artifact_source_dir: \{artifact_source_dir}",
+  ]
+  @infra.ensure_dir(run_dir)
+  @infra.ensure_dir(artifact_source_dir)
+  @infra.write_text(patch_path, diff_text)
+  @infra.write_text(
+    @infra.join_path(run_dir, "input-summary.md"),
+    summary_lines.join("\n") + "\n",
+  )
+  (run_dir, artifact_source_dir)
+}
+
+///|
 /// 返回内置最小验收包需要附带的固定文件清单。
 fn built_in_acceptance_pack_files() -> Array[(String, String)] {
   [
@@ -1272,39 +1316,43 @@ pub fn run_check(
   run_dir : String,
   mode? : String = "local",
 ) -> @domain.CheckResult raise {
-  let actual_mode = @adapters.normalize_mode(mode)
   let env = @adapters.current_env()
   let repo_rules = load_repo_rules(repo_root)
   let current_task = load_current_task(repo_root)
+  let actual_mode = @adapters.resolve_mode(
+    mode,
+    env,
+    fallback_mode=current_task.check_mode,
+  )
   let template = load_template(repo_root, current_task.task_type)
   let check_preferences = load_check_preferences(repo_root)
   let effective_task = @checkers.build_effective_task(
     repo_rules, template, current_task,
   )
-  let local_input = if actual_mode == "local" && run_dir.trim() == "" {
-    if check_preferences.auto_prepare_local_run_input {
-      Some(
-        prepare_local_check_input(
+  let auto_input = if run_dir.trim() == "" {
+    if actual_mode == "local" {
+      if check_preferences.auto_prepare_local_run_input {
+        let input = prepare_local_check_input(
           repo_root,
           current_task,
           @infra.read_git_project_snapshot(repo_root),
-        ),
-      )
+        )
+        Some((input.run_dir, input.artifact_source_dir))
+      } else {
+        raise Failure::Failure("当前仓库要求显式提供 --run 目录")
+      }
     } else {
-      raise Failure::Failure("当前仓库要求显式提供 --run 目录")
+      Some(prepare_hosted_check_input(repo_root, current_task, actual_mode, env))
     }
   } else {
     None
   }
-  if actual_mode != "local" && run_dir.trim() == "" {
-    raise Failure::Failure("CI 或 PR 模式必须显式提供 --run 目录")
-  }
-  let effective_run_dir = match local_input {
-    Some(input) => input.run_dir
+  let effective_run_dir = match auto_input {
+    Some((generated_run_dir, _)) => generated_run_dir
     None => run_dir
   }
-  let artifact_source_dir = match local_input {
-    Some(input) => input.artifact_source_dir
+  let artifact_source_dir = match auto_input {
+    Some((_, generated_artifact_dir)) => generated_artifact_dir
     None => effective_run_dir
   }
   let diff_path = @infra.join_path(effective_run_dir, "patch.diff")
@@ -1366,7 +1414,7 @@ pub fn report_latest(
   repo_root : String,
   mode? : String = "local",
 ) -> String raise {
-  let actual_mode = @adapters.normalize_mode(mode)
+  let actual_mode = @adapters.resolve_mode(mode, @adapters.current_env())
   @infra.read_text(
     @infra.join_path(
       @adapters.latest_output_dir(repo_root, actual_mode),
@@ -1381,8 +1429,9 @@ pub fn report_summary(
   repo_root : String,
   mode? : String = "local",
 ) -> String raise {
-  let actual_mode = @adapters.normalize_mode(mode)
   let report_preferences = load_report_preferences(repo_root)
+  let env = @adapters.current_env()
+  let actual_mode = @adapters.resolve_mode(mode, env)
   let summary_path = @infra.join_path(
     @adapters.latest_output_dir(repo_root, actual_mode),
     "report-summary.txt",
@@ -1527,7 +1576,7 @@ pub fn pack_latest(
   repo_root : String,
   mode? : String = "local",
 ) -> String raise {
-  let actual_mode = @adapters.normalize_mode(mode)
+  let actual_mode = @adapters.resolve_mode(mode, @adapters.current_env())
   let latest_dir = @adapters.latest_output_dir(repo_root, actual_mode)
   if !@infra.path_exists(latest_dir) {
     return render_pack_failure("未找到最近一次检查结果")

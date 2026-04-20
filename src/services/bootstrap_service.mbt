@@ -10,7 +10,7 @@
 
 ///|
 /// 返回按任务类型区分的默认标题前缀。
-/// 这些前缀会参与 `task --type ...` 的自动标题生成。
+/// 这些前缀会参与 `task <type>` 的自动标题生成。
 fn default_title_prefixes() -> Map[String, String] {
   {
     "feature-change": "补充",

@@ -142,7 +142,7 @@ fn current_task_header() -> String {
     #|# 当前任务文件说明
     #|# 先总说：
     #|# 1. 这是 MoonForge 正在检查的“这一轮任务”
-    #|# 2. 大部分字段可以由 `moonforge task --type ...` 自动补全
+    #|# 2. 大部分字段可以由 `moonforge task <type>` 自动补全
     #|# 3. 如果系统猜得不准，你通常只需要改 title、target_groups、target_paths
     #|#
     #|# 再分说：

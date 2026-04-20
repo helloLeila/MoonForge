@@ -52,7 +52,7 @@ pub fn blank_current_task_template() -> String {
     #|# 当前任务文件说明
     #|# 先总说：这个文件决定 MoonForge 这一轮到底检查什么
     #|# 再分说：最常改的是 title、target_groups、target_paths
-    #|# 如果你还没有运行 `moonforge task --type ...`，下面很多字段会先保持空白
+    #|# 如果你还没有运行 `moonforge task <type>`，下面很多字段会先保持空白
     #|
     #|task_type: ""
     #|

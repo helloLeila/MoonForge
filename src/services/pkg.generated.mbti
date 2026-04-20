@@ -140,6 +140,8 @@ pub fn render_output_catalog_markdown(@domain.OutputCatalogView) -> String
 
 pub fn render_output_catalog_quickstart(@domain.OutputCatalogView) -> String
 
+pub fn render_output_self_checklist(@domain.OutputCatalogView) -> String
+
 pub fn render_output_walkthrough_markdown(@domain.OutputWalkthroughView) -> String
 
 pub fn render_pack_failure(String) -> String

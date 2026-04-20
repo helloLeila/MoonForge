@@ -26,6 +26,8 @@ pub fn read_local_diff(String) -> String raise
 
 pub fn read_pr_diff(Map[String, String], String) -> String raise
 
+pub fn resolve_mode(String, Map[String, String], fallback_mode? : String) -> String
+
 pub fn run_id_from_run_dir(String) -> String
 
 pub fn snapshot_dir(String, String) -> String

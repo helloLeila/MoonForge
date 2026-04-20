@@ -12,7 +12,7 @@
 
 ///|
 /// task 命令默认偏好。
-/// 这组配置主要影响 `moonforge task --type ...` 自动填什么、怎么填。
+/// 这组配置主要影响 `moonforge task <type>` 自动填什么、怎么填。
 pub(all) struct TaskDefaults {
   default_check_mode : String
   default_artifact_dir : String

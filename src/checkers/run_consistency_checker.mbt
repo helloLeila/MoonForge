@@ -72,7 +72,7 @@ pub fn review_run_consistency(
       code: "TASK_STAGED_FILES_OLD",
       severity: "warning",
       detail: "任务文件里还记着 \{task_only_files.length()} 个旧的暂存文件",
-      suggestion: "重新运行 moonforge task --type ...，让 current-task.yml 跟上当前暂存区",
+      suggestion: "重新运行 moonforge task <type>，让 current-task.yml 跟上当前暂存区",
     })
   }
 

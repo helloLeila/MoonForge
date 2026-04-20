@@ -20,6 +20,40 @@ pub fn normalize_mode(mode : String) -> String {
 }
 
 ///|
+/// 根据显式参数和当前环境推断真正要使用的运行模式。
+/// 规则顺序很简单：
+/// 1. 用户明确传了 `ci` / `pr` / `local` 时，直接尊重用户输入
+/// 2. 用户没传或传了 `auto` 时，如果在 GitHub Actions 里，自动判断是 `ci` 还是 `pr`
+/// 3. 其余情况回退到调用方给的默认模式，默认再回退到 `local`
+pub fn resolve_mode(
+  requested_mode : String,
+  env : Map[String, String],
+  fallback_mode? : String = "local",
+) -> String {
+  let trimmed = requested_mode.trim().to_string()
+  if trimmed != "" && trimmed != "auto" {
+    return normalize_mode(trimmed)
+  }
+  if is_github_actions_env(env) {
+    let has_base_ref = match github_base_ref(env) {
+      Some(value) => value.trim() != ""
+      None => false
+    }
+    let has_head_ref = match github_head_ref(env) {
+      Some(value) => value.trim() != ""
+      None => false
+    }
+    if is_pull_request_event(env) && has_base_ref && has_head_ref {
+      "pr"
+    } else {
+      "ci"
+    }
+  } else {
+    normalize_mode(fallback_mode)
+  }
+}
+
+///|
 /// 返回某种运行模式下最近一次输出目录的位置。
 pub fn latest_output_dir(repo_root : String, mode : String) -> String {
   @infra.join_path(repo_root, ".moonforge/out/\{normalize_mode(mode)}/latest")

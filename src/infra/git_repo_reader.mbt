@@ -60,6 +60,63 @@ pub fn read_staged_diff(repo_root : String) -> String raise {
 }
 
 ///|
+/// 判断某个 git 引用是否已经存在于当前仓库。
+/// 这一步主要给 PR 比对场景复用，避免直接假设 `origin/main` 一定存在。
+fn git_ref_exists(repo_root : String, git_ref : String) -> Bool {
+  let command =
+    "git -C \{shell_quote(repo_root)} rev-parse --verify \{shell_quote(git_ref)}"
+  let result = run_shell_capture(command, ".") catch {
+    _ => return false
+  }
+  result.is_ok()
+}
+
+///|
+/// 读取最近一次提交相对于上一个提交的完整补丁。
+/// 线上普通 CI 场景没有暂存区时，可以用这份 diff 代表“这次构建新带来的代码变化”。
+pub fn read_head_commit_diff(repo_root : String) -> String raise {
+  let result = run_git_command(repo_root, "diff --binary HEAD^ HEAD")
+  result.stdout
+}
+
+///|
+/// 读取当前 HEAD 相对于 PR base 的完整补丁。
+/// 优先使用 `origin/<base>`，如果本地只有同名分支，就退回到本地分支名。
+/// 当远端引用还没拉下来时，会先尝试执行一次 `git fetch origin <base> --depth=1`。
+pub fn read_pr_compare_diff(repo_root : String, base_ref : String) -> String raise {
+  let trimmed = base_ref.trim().to_string()
+  if trimmed == "" {
+    raise Failure::Failure("PR base ref is empty")
+  }
+  let origin_ref = "origin/\{trimmed}"
+  if !git_ref_exists(repo_root, origin_ref) {
+    let fetch_command =
+      "git -C \{shell_quote(repo_root)} fetch --quiet --depth=1 origin \{shell_quote(trimmed)}"
+    ignore(run_shell_command(fetch_command, ".") catch { _ => 1 })
+  }
+  let base_target = if git_ref_exists(repo_root, origin_ref) {
+    origin_ref
+  } else if git_ref_exists(repo_root, trimmed) {
+    trimmed
+  } else {
+    raise Failure::Failure("PR base ref not found in repository: \{trimmed}")
+  }
+  let merge_base_result = run_git_command(
+    repo_root,
+    "merge-base \{shell_quote(base_target)} HEAD",
+  )
+  let merge_base = merge_base_result.stdout.trim().to_string()
+  if merge_base == "" {
+    raise Failure::Failure("Failed to resolve merge-base for PR base ref: \{base_target}")
+  }
+  let diff_result = run_git_command(
+    repo_root,
+    "diff --binary \{shell_quote(merge_base)} HEAD",
+  )
+  diff_result.stdout
+}
+
+///|
 /// 读取已暂存文件列表。
 /// 入参：`repo_root`，目标仓库根目录。
 /// 出参：按相对路径给出的已暂存文件数组。
